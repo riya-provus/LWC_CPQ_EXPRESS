@@ -9,6 +9,9 @@ import saveQuoteLineItems from '@salesforce/apex/QuoteExplorerController.saveQuo
 import submitForApproval from '@salesforce/apex/QuoteExplorerController.submitForApproval';
 import updateQuoteStatus from '@salesforce/apex/QuoteExplorerController.updateQuoteStatus';
 import deleteQuoteLineItem from '@salesforce/apex/QuoteExplorerController.deleteQuoteLineItem';
+import getSavedPDFs from '@salesforce/apex/QuoteExplorerController.getSavedPDFs';
+import savePDFToQuote from '@salesforce/apex/QuoteExplorerController.savePDFToQuote';
+import deleteQuoteDocument from '@salesforce/apex/QuoteExplorerController.deleteQuoteDocument';
 
 export default class CpqQuoteExplorer extends LightningElement {
     @api quoteId;
@@ -18,9 +21,12 @@ export default class CpqQuoteExplorer extends LightningElement {
     @track approvalHistory = [];
     @track lineItems = [];
     @track draftItems = [];
+    @track savedPDFs = [];
     @track activeTab = 'Summary';
     @track isLoading = true;
     @track isModalOpen = false;
+    @track isPreviewModalOpen = false;
+    @track pdfUrl = '';
     @track isSubmitting = false;
     @track isProcessingAction = false;
 
@@ -34,6 +40,7 @@ export default class CpqQuoteExplorer extends LightningElement {
     _wiredSummaryResult;
     _wiredItemsResult;
     _wiredHistoryResult;
+    _wiredPDFsResult;
 
     @wire(getQuoteSummary, { quoteId: '$quoteId' })
     wiredSummary(result) {
@@ -74,6 +81,16 @@ export default class CpqQuoteExplorer extends LightningElement {
                 formattedDate: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(step.createdDate)),
                 statusClass: this.getApprovalStatusClass(step.status)
             }));
+        }
+    }
+
+    @wire(getSavedPDFs, { quoteId: '$quoteId' })
+    wiredPDFs(result) {
+        this._wiredPDFsResult = result;
+        if (result.data) {
+            this.savedPDFs = result.data;
+        } else if (result.error) {
+            console.error('Error fetching PDFs:', result.error);
         }
     }
 
@@ -190,6 +207,48 @@ export default class CpqQuoteExplorer extends LightningElement {
             }));
         } finally {
             this.isProcessingAction = false;
+        }
+    }
+
+    async handleGeneratePDF() {
+        if (!this.quoteId) return;
+        await this.handleSave();
+        this.pdfUrl = `/apex/QuoteDocument?id=${this.quoteId}`;
+        this.isPreviewModalOpen = true;
+    }
+
+    closePreviewModal() {
+        this.isPreviewModalOpen = false;
+        this.pdfUrl = '';
+    }
+
+    async handleDownloadAndSave(event) {
+        if (!this.quoteId) return;
+        try {
+            await savePDFToQuote({ quoteId: this.quoteId });
+            this.dispatchEvent(new ShowToastEvent({ title: 'Success', message: 'PDF Saved Successfully to Generated PDFs', variant: 'success' }));
+            await refreshApex(this._wiredPDFsResult);
+        } catch (error) {
+            console.error('Error saving PDF:', error);
+            this.dispatchEvent(new ShowToastEvent({ title: 'Error Saving PDF', message: error.body ? error.body.message : error.message, variant: 'error' }));
+        }
+    }
+
+    async handleDeletePDF(event) {
+        const documentId = event.currentTarget.dataset.id;
+        if (!documentId) return;
+        
+        if (!confirm('Are you sure you want to delete this PDF? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            await deleteQuoteDocument({ documentId: documentId });
+            this.dispatchEvent(new ShowToastEvent({ title: 'Success', message: 'PDF deleted successfully', variant: 'success' }));
+            await refreshApex(this._wiredPDFsResult);
+        } catch (error) {
+            console.error('Error deleting PDF:', error);
+            this.dispatchEvent(new ShowToastEvent({ title: 'Error Deleting PDF', message: error.body ? error.body.message : error.message, variant: 'error' }));
         }
     }
 
@@ -507,6 +566,7 @@ export default class CpqQuoteExplorer extends LightningElement {
     get isSummaryActive() { return this.activeTab === 'Summary'; }
     get isLineItemsActive() { return this.activeTab === 'Line Items'; }
     get isTimelineActive() { return this.activeTab === 'Timeline'; }
+    get isGeneratedPDFsActive() { return this.activeTab === 'Generated PDFs'; }
 
     // Calculated breakdowns
     get laborRevenue() { return this.formatCurrency(this.findCalculatedValue('Labor')); }

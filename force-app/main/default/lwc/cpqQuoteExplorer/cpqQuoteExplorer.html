@@ -42,7 +42,7 @@
                             Reject
                         </button>
                     </template>
-                    <button class="secondary-btn" title="Generate PDF">
+                    <button class="secondary-btn" title="Generate PDF" onclick={handleGeneratePDF}>
                         <lightning-icon icon-name="utility:pdf_ext" size="xx-small" alternative-text="PDF"></lightning-icon> Generate PDF
                     </button>
                     <button if:false={isReadOnly} class="primary-btn" onclick={handleSave}>Save</button>
@@ -360,6 +360,52 @@
                         </div>
                     </div>
                 </template>
+
+                <!-- Generated PDFs View -->
+                <template if:true={isGeneratedPDFsActive}>
+                    <div class="generated-pdfs-view" style="padding: 1.5rem;">
+                        <div class="view-header slds-m-bottom_large" style="display: flex; justify-content: space-between; align-items: center;">
+                            <h2 style="font-size: 1.25rem; font-weight: 600;">Saved PDF Documents</h2>
+                            <button class="secondary-btn" title="Generate New PDF" onclick={handleGeneratePDF}>
+                                <lightning-icon icon-name="utility:pdf_ext" size="xx-small" alternative-text="PDF"></lightning-icon> Generate New
+                            </button>
+                        </div>
+                        <div class="slds-grid slds-wrap slds-gutters">
+                            <template if:true={savedPDFs} for:each={savedPDFs} for:item="pdf">
+                                <div key={pdf.id} class="slds-col slds-size_1-of-3 slds-m-bottom_medium">
+                                    <div class="slds-box slds-box_link slds-box_x-small" style="display: flex; align-items: center; justify-content: space-between; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                                        <div style="display: flex; align-items: center;">
+                                            <lightning-icon icon-name="doctype:pdf" title="PDF Document" class="slds-m-right_small" size="medium"></lightning-icon>
+                                            <div>
+                                                <p class="slds-text-heading_small">{pdf.title}</p>
+                                                <p class="slds-text-body_small slds-text-color_weak">{pdf.createdDate}</p>
+                                            </div>
+                                        </div>
+                                        <div style="display: flex; gap: 0.25rem;">
+                                            <a href={pdf.downloadUrl} target="_blank" download class="slds-button slds-button_icon slds-button_icon-border-filled" title="Download">
+                                                <lightning-icon icon-name="utility:download" size="x-small"></lightning-icon>
+                                                <span class="slds-assistive-text">Download</span>
+                                            </a>
+                                            <button class="slds-button slds-button_icon slds-button_icon-border-filled" title="Delete" data-id={pdf.id} onclick={handleDeletePDF}>
+                                                <lightning-icon icon-name="utility:delete" size="x-small"></lightning-icon>
+                                                <span class="slds-assistive-text">Delete</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                            <template if:false={savedPDFs.length}>
+                                <div class="slds-col slds-size_1-of-1">
+                                    <div class="slds-illustration slds-illustration_small" style="text-align: center; margin-top: 3rem;">
+                                        <lightning-icon icon-name="utility:inbox" size="large" class="slds-m-bottom_medium" style="opacity: 0.3;"></lightning-icon>
+                                        <h3 class="slds-text-heading_medium">No PDFs Generated Yet</h3>
+                                        <p class="slds-text-body_regular slds-m-top_small slds-text-color_weak">Click "Generate PDF" from the header to create and save a document.</p>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
             </template>
         </div>
 
@@ -369,6 +415,29 @@
                 onclose={closeAddItemModal}
                 onadd={handleItemsAdded}
             ></c-cpq-add-item-modal>
+        </template>
+
+        <!-- PDF Preview Modal -->
+        <template if:true={isPreviewModalOpen}>
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_large">
+                <div class="slds-modal__container" style="width: 80%; max-width: 90rem; height: 90vh;">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={closePreviewModal}>
+                            <lightning-icon icon-name="utility:close" alternative-text="close" size="small" variant="inverse"></lightning-icon>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 class="slds-modal__title slds-hyphenate">Generate Document Preview</h2>
+                    </header>
+                    <div class="slds-modal__content p-0" style="height: 100%; border-radius: 0;">
+                        <iframe src={pdfUrl} width="100%" height="100%" style="border: none;" title="PDF Preview"></iframe>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <button class="slds-button slds-button_neutral" onclick={closePreviewModal}>Cancel</button>
+                        <button class="slds-button slds-button_brand" onclick={handleDownloadAndSave}>Save PDF to Quote</button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
         </template>
     </div>
 </template>
