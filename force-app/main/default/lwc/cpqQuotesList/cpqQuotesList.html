@@ -1,0 +1,278 @@
+<template>
+    <div class="quotes-container">
+        <!-- Header -->
+        <div class="quotes-header">
+            <div class="header-left">
+                <button class="back-btn"><lightning-icon icon-name="utility:chevronleft" size="x-small"></lightning-icon></button>
+                <div>
+                    <h1 class="header-title">Quotes</h1>
+                    <p class="header-subtitle">Manage sales quotes and proposals</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="primary-btn" onclick={handleNewQuote}>+ New</button>
+                <button class="header-btn" onclick={handleRefresh}><lightning-icon icon-name="utility:refresh" size="xx-small"></lightning-icon> Refresh</button>
+                <button class="header-btn"><lightning-icon icon-name="utility:einstein" size="xx-small"></lightning-icon> AI Assistant</button>
+            </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="quotes-toolbar">
+            <div class="search-box">
+                <lightning-icon icon-name="utility:search" size="x-small" class="search-icon"></lightning-icon>
+                <input type="text" placeholder="Search quotes..." class="search-input" oninput={handleSearch}/>
+            </div>
+            <div class="filters">
+                <div class="custom-dropdown">
+                    <button class="dropdown-btn" onclick={toggleStatusDropdown}>
+                        <lightning-icon icon-name="utility:filterList" size="xx-small" class="select-icon"></lightning-icon>
+                        <span class="btn-label">{dropdownLabel}</span>
+                        <lightning-icon icon-name="utility:down" size="xx-small" class="chevron-icon"></lightning-icon>
+                    </button>
+                    <template if:true={isStatusDropdownOpen}>
+                        <div class="dropdown-menu">
+                            <ul>
+                                <li data-value="All" onclick={handleStatusSelect}>
+                                    All Status <lightning-icon if:true={isStatusAll} icon-name="utility:check" size="xx-small" class="check-icon"></lightning-icon>
+                                </li>
+                                <li data-value="Draft" onclick={handleStatusSelect}>
+                                    Draft <lightning-icon if:true={isStatusDraft} icon-name="utility:check" size="xx-small" class="check-icon"></lightning-icon>
+                                </li>
+                                <li data-value="Pending Approval" onclick={handleStatusSelect}>
+                                    Pending Approval <lightning-icon if:true={isStatusPending} icon-name="utility:check" size="xx-small" class="check-icon"></lightning-icon>
+                                </li>
+                                <li data-value="Approved" onclick={handleStatusSelect}>
+                                    Approved <lightning-icon if:true={isStatusApproved} icon-name="utility:check" size="xx-small" class="check-icon"></lightning-icon>
+                                </li>
+                                <li data-value="Rejected" onclick={handleStatusSelect}>
+                                    Rejected <lightning-icon if:true={isStatusRejected} icon-name="utility:check" size="xx-small" class="check-icon"></lightning-icon>
+                                </li>
+                            </ul>
+                        </div>
+                    </template>
+                </div>
+                <!-- Account Filter Dropdown -->
+                <div class="custom-dropdown">
+                    <button class="dropdown-btn" onclick={toggleAccountDropdown}>
+                        <lightning-icon icon-name="utility:account" size="xx-small" class="select-icon"></lightning-icon>
+                        <span class="btn-label">{accountDropdownLabel}</span>
+                        <lightning-icon icon-name="utility:down" size="xx-small" class="chevron-icon"></lightning-icon>
+                    </button>
+                    <template if:true={isAccountDropdownOpen}>
+                        <div class="dropdown-menu account-menu">
+                            <ul>
+                                <li data-id="" data-name="All Accounts" onclick={clearAccountFilter}>
+                                    All Accounts
+                                    <lightning-icon if:true={isStatusAll} icon-name="utility:check" size="xx-small" class="check-icon"></lightning-icon>
+                                </li>
+                                <template for:each={accounts} for:item="acc">
+                                    <li key={acc.Id} data-id={acc.Id} data-name={acc.Name} onclick={handleAccountSelect}>
+                                        {acc.Name}
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
+                    </template>
+                </div>
+                <div class="custom-dropdown">
+                    <button class={viewBtnClass} onclick={toggleViewDropdown}>
+                        <lightning-icon icon-name="utility:rows" size="xx-small"></lightning-icon> View <div class="badge">{visibleColumnsCount}</div>
+                    </button>
+                    <template if:true={isViewDropdownOpen}>
+                        <div class="view-settings-menu">
+                            <div class="view-header">
+                                <span class="view-title">View Settings</span>
+                                <button class="reset-text-btn" onclick={resetView}>Reset</button>
+                            </div>
+                            
+                            <div class="density-section">
+                                <div class="section-label">Density</div>
+                                <div class="density-toggle">
+                                    <button class={densityDefaultClass} onclick={setDensityDefault}><lightning-icon icon-name="utility:rows" size="x-small" class="density-icon"></lightning-icon> Default</button>
+                                    <button class={densityCompactClass} onclick={setDensityCompact}><lightning-icon icon-name="utility:justify_text" size="x-small" class="density-icon"></lightning-icon> Compact</button>
+                                </div>
+                            </div>
+
+                            <div class="fields-section">
+                                <div class="fields-header">
+                                    <span class="section-label">Fields</span>
+                                    <button class="reset-text-btn" onclick={selectAllColumns}>Select All</button>
+                                </div>
+                                <div class="fields-list">
+                                    <template for:each={columns} for:item="col">
+                                        <div key={col.id} class="field-item">
+                                            <lightning-icon icon-name="utility:drag_and_drop" size="xx-small" class="drag-icon"></lightning-icon>
+                                            <input type="checkbox" class="field-checkbox" checked={col.visible} data-id={col.id} onchange={handleColumnToggle} disabled={col.locked}/>
+                                            <span class="field-name">{col.label}</span>
+                                            <lightning-icon if:true={col.locked} icon-name="utility:lock" size="xx-small" class="lock-icon"></lightning-icon>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-subtitle">Showing 1-{quotesCount} of {quotesCount}</div>
+
+        <template if:true={errorMsg}>
+            <div style="background-color: #fee2e2; color: #b91c1c; padding: 16px 32px; margin: 16px 32px; border-radius: 8px; font-weight: bold;">
+                Data Error: {errorMsg}
+            </div>
+        </template>
+
+        <!-- Table -->
+        <div class="table-container">
+            <table class={tableDensityClass}>
+                <thead>
+                    <tr>
+                        <th class="chk-col"><input type="checkbox"/></th>
+                        <template if:true={showHash}><th>#</th></template>
+                        <template if:true={showId}><th>ID</th></template>
+                        <template if:true={showOpportunity}><th>Opportunity</th></template>
+                        <template if:true={showAccount}><th>Account</th></template>
+                        <template if:true={showStatus}><th>Status</th></template>
+                        <template if:true={showCreatedBy}><th>Created By</th></template>
+                        <template if:true={showCreatedDate}><th>Created Date</th></template>
+                        <template if:true={showTotalAmount}><th>Total Amount</th></template>
+                        <template if:true={showDiscount}><th>Discount %</th></template>
+                        <template if:true={showMargin}><th>Margin %</th></template>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template for:each={processedQuotes} for:item="quote">
+                        <tr key={quote.Id}>
+                            <td class="chk-col"><input type="checkbox"/></td>
+                            <template if:true={showHash}><td>{quote.indexNumber}</td></template>
+                            <template if:true={showId}><td><a href="javascript:void(0);" class="quote-link" data-id={quote.Id} onclick={handleQuoteClick}>{quote.QuoteNumber}</a></td></template>
+                            <template if:true={showOpportunity}><td>{quote.OpportunityName}</td></template>
+                            <template if:true={showAccount}><td>{quote.AccountName}</td></template>
+                            <template if:true={showStatus}><td><span class={quote.statusClass}>{quote.Status}</span></td></template>
+                            <template if:true={showCreatedBy}><td>{quote.CreatedByName}</td></template>
+                            <template if:true={showCreatedDate}><td>{quote.formattedCreatedDate}</td></template>
+                            <template if:true={showTotalAmount}><td>{quote.formattedAmount}</td></template>
+                            <template if:true={showDiscount}><td>{quote.formattedDiscount}</td></template>
+                            <template if:true={showMargin}><td>{quote.formattedMargin}</td></template>
+                            <td class="actions-cell">
+                                <button class="icon-btn" title="Clone" data-id={quote.Id} onclick={handleClone}>
+                                    <lightning-icon icon-name="utility:copy" size="xx-small"></lightning-icon>
+                                </button>
+                                <button class="icon-btn" title="Delete" data-id={quote.Id} onclick={handleDelete}>
+                                    <lightning-icon icon-name="utility:delete" size="xx-small"></lightning-icon>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- New Quote Modal -->
+    <template if:true={showNewQuoteModal}>
+        <div class="modal-overlay" onclick={closeModal}>
+            <div class="modal-container" onclick={stopProp}>
+                <div class="modal-header">
+                    <span class="modal-title">Create New Quote</span>
+                    <button class="modal-close-btn" onclick={closeModal}>
+                        <lightning-icon icon-name="utility:close" size="x-small"></lightning-icon>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- Error Banner -->
+                    <template if:true={createError}>
+                        <div class="modal-error">{createError}</div>
+                    </template>
+
+                    <!-- Opportunity -->
+                    <div class="modal-field-group">
+                        <label class="modal-label">Opportunity</label>
+                        <div class="custom-dropdown modal-dropdown">
+                            <button class="modal-select-btn" onclick={toggleOppDropdown}>
+                                <span class="modal-select-label">{selectedOppLabel}</span>
+                                <lightning-icon icon-name="utility:chevrondown" size="xx-small" class="chevron-icon"></lightning-icon>
+                            </button>
+                            <template if:true={isOppDropdownOpen}>
+                                <div class="dropdown-menu modal-menu">
+                                    <ul>
+                                        <li data-id="" onclick={clearOppSelection}>None (Optional)</li>
+                                        <template for:each={filteredOpportunities} for:item="opp">
+                                            <li key={opp.Id} data-id={opp.Id} onclick={handleOppSelect}>{opp.Name}</li>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Account -->
+                    <div class="modal-field-group">
+                        <label class="modal-label">Account <span class="required-star">*</span></label>
+                        <div class="custom-dropdown modal-dropdown">
+                            <button class="modal-select-btn" onclick={toggleModalAccountDropdown}>
+                                <span class="modal-select-label">{selectedModalAccountLabel}</span>
+                                <lightning-icon icon-name="utility:chevrondown" size="xx-small" class="chevron-icon"></lightning-icon>
+                            </button>
+                            <template if:true={isModalAccountDropdownOpen}>
+                                <div class="dropdown-menu modal-menu">
+                                    <ul>
+                                        <template for:each={accounts} for:item="acc">
+                                            <li key={acc.Id} data-id={acc.Id} onclick={handleModalAccountSelect}>{acc.Name}</li>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </template>
+                        </div>
+                        <p class="field-hint">Select an Account to filter Opportunities. If no Opportunity is selected, one will be auto-linked.</p>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="modal-field-group">
+                        <label class="modal-label">Description</label>
+                        <div class="modal-textarea-wrapper">
+                            <textarea class="modal-textarea" placeholder="Enter quote description (optional)..."
+                                maxlength="255" onchange={handleDescriptionChange}></textarea>
+                            <span class="char-count">{charCount}/255 characters</span>
+                        </div>
+                    </div>
+
+                    <!-- Date Row -->
+                    <div class="modal-date-row">
+                        <div class="modal-field-group date-field">
+                            <label class="modal-label">Quote Start Date <span class="required-star">*</span></label>
+                            <input type="date" class="modal-date-input" value={newQuote.startDate} onchange={handleStartDateChange}/>
+                        </div>
+                        <div class="modal-field-group date-field">
+                            <label class="modal-label">Quote End Date</label>
+                            <input type="date" class="modal-date-input" placeholder="Select end date" onchange={handleEndDateChange}/>
+                        </div>
+                    </div>
+
+                    <!-- Time Period -->
+                    <div class="modal-field-group">
+                        <label class="modal-label">Time Period <span class="required-star">*</span></label>
+                        <select class="modal-select" value={newQuote.timePeriod} onchange={handleTimePeriodChange}>
+                            <option value="Months">Months</option>
+                            <option value="Quarters">Quarters</option>
+                            <option value="Years">Years</option>
+                            <option value="Days">Days</option>
+                            <option value="One Time">One Time</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="modal-cancel-btn" onclick={closeModal}>Cancel</button>
+                    <button class="modal-create-btn" onclick={handleCreateQuote} disabled={isCreating}>
+                        <template if:true={isCreating}>Creating...</template>
+                        <template if:false={isCreating}>Create</template>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+</template>

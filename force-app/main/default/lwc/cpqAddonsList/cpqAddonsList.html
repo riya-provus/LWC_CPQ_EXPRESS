@@ -1,0 +1,270 @@
+<template>
+    <div class="list-container anim-fade-in">
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="header-left">
+                <h1 class="text-xl font-bold">Add-ons</h1>
+                <p class="text-sm text-gray-secondary">Manage your Add-ons</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick={handleNewAddon}>
+                    <lightning-icon icon-name="utility:add" size="xx-small" variant="inverse" class="margin-right-xs"></lightning-icon>
+                    New
+                </button>
+                <button class="btn btn-outline" onclick={handleImport}>
+                    <lightning-icon icon-name="utility:upload" size="xx-small" class="margin-right-xs"></lightning-icon>
+                    Import
+                </button>
+                <button class="btn btn-icon" title="Refresh" onclick={handleRefresh}>
+                    <lightning-icon icon-name="utility:refresh" size="xx-small"></lightning-icon>
+                </button>
+                <button class="btn btn-outline ai-btn">
+                    <lightning-icon icon-name="utility:frozen" size="xx-small" class="margin-right-xs ai-icon"></lightning-icon>
+                    AI Assistant
+                </button>
+            </div>
+        </div>
+
+        <!-- Search & Filter Bar -->
+        <div class="search-filter-bar">
+            <div class="search-wrapper">
+                <lightning-icon icon-name="utility:search" size="xx-small" class="search-icon"></lightning-icon>
+                <input type="text" placeholder="Search Add-ons..." oninput={handleSearch} class="search-input">
+            </div>
+            <div class="filter-actions">
+                <button class="btn btn-outline no-wrap">
+                    <lightning-icon icon-name="utility:filterList" size="xx-small" class="margin-right-xs"></lightning-icon>
+                    Filters
+                </button>
+                <div class="view-settings-container">
+                    <button class="btn btn-outline no-wrap" onclick={toggleViewDropdown}>
+                        <lightning-icon icon-name="utility:settings" size="xx-small" class="margin-right-xs"></lightning-icon>
+                        View <span class="badge margin-left-xs">{visibleColumnCount}</span>
+                    </button>
+                    <!-- View Settings Dropdown -->
+                    <template if:true={isViewDropdownOpen}>
+                        <div class="dropdown-menu shadow-lg border">
+                            <div class="dropdown-header">Table Settings</div>
+                            <div class="dropdown-section">
+                                <span class="section-label">Density</span>
+                                <div class="density-toggle">
+                                    <button class={densityDefaultClass} onclick={setDensityDefault}>Default</button>
+                                    <button class={densityCompactClass} onclick={setDensityCompact}>Compact</button>
+                                </div>
+                            </div>
+                            <div class="dropdown-section">
+                                <span class="section-label">Fields</span>
+                                <template for:each={columns} for:item="col">
+                                    <div key={col.id} class="field-toggle-item">
+                                        <lightning-input type="checkbox" label={col.label} checked={col.visible} onchange={toggleColumn} data-id={col.id}></lightning-input>
+                                    </div>
+                                </template>
+                            </div>
+                            <div class="dropdown-footer">
+                                <button class="btn-text btn-reset" onclick={resetViewSettings}>Reset to Default</button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table Info -->
+        <div class="table-info">
+            <span>Showing 1-{filteredAddons.length} of {addons.length}</span>
+        </div>
+
+        <!-- Table View -->
+        <div class="table-wrapper glass-effect">
+            <table class={tableClass}>
+                <thead>
+                    <tr>
+                        <th class="col-checkbox"><input type="checkbox"></th>
+                        <th class="col-small">#</th>
+                        <template if:true={isColVisible.id}>
+                            <th>ID</th>
+                        </template>
+                        <template if:true={isColVisible.name}>
+                            <th>Name</th>
+                        </template>
+                        <template if:true={isColVisible.billingUnit}>
+                            <th>Billing Unit</th>
+                        </template>
+                        <template if:true={isColVisible.price}>
+                            <th>Price</th>
+                        </template>
+                        <template if:true={isColVisible.cost}>
+                            <th>Cost</th>
+                        </template>
+                        <template if:true={isColVisible.tags}>
+                            <th>Tags</th>
+                        </template>
+                        <template if:true={isColVisible.active}>
+                            <th class="text-center">Active</th>
+                        </template>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template for:each={filteredAddons} for:item="addon" for:index="index">
+                        <tr key={addon.Id} class="anim-fade-in hover-row">
+                            <td class="col-checkbox"><input type="checkbox"></td>
+                            <td class="text-gray-dimmed">{addon.counter}</td>
+                            <template if:true={isColVisible.id}>
+                                <td class="text-primary font-medium">{addon.Addon_ID__c}</td>
+                            </template>
+                            <template if:true={isColVisible.name}>
+                                <td class="font-semibold text-gray-dark">
+                                    {addon.Name}
+                                    <template if:true={addon.Description__c}>
+                                        <div class="text-xxs text-gray-secondary">{addon.Description__c}</div>
+                                    </template>
+                                </td>
+                            </template>
+                            <template if:true={isColVisible.billingUnit}>
+                                <td>{addon.Billing_Unit__c}</td>
+                            </template>
+                            <template if:true={isColVisible.price}>
+                                <td class="price-cell">{addon.formattedPrice}</td>
+                            </template>
+                            <template if:true={isColVisible.cost}>
+                                <td class="cost-cell">{addon.formattedCost}</td>
+                            </template>
+                            <template if:true={isColVisible.location}>
+                                <td>{addon.Location__c}</td>
+                            </template>
+                            <template if:true={isColVisible.tags}>
+                                <td>
+                                    <template if:true={addon.Tags__c}>
+                                        <span class="tag">{addon.Tags__c}</span>
+                                    </template>
+                                    <template if:false={addon.Tags__c}>
+                                        <span class="text-gray-dimmed">-</span>
+                                    </template>
+                                </td>
+                            </template>
+                            <template if:true={isColVisible.active}>
+                                <td class="text-center">
+                                    <div class="toggle-wrapper">
+                                        <input type="checkbox" checked={addon.Active__c} data-id={addon.Id} onchange={handleStatusToggle} class="toggle-input"/>
+                                        <span class="toggle-slider"></span>
+                                    </div>
+                                </td>
+                            </template>
+                            <td class="text-right">
+                                <div class="action-btns">
+                                    <button class="action-icon-btn" title="Delete" onclick={handleDelete} data-id={addon.Id}>
+                                        <lightning-icon icon-name="utility:delete" size="xx-small"></lightning-icon>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                    <template if:false={filteredAddons.length}>
+                        <tr>
+                            <td colspan="11" class="no-data-cell">
+                                <div class="no-data">
+                                    <lightning-icon icon-name="utility:sentiment_neutral" size="medium"></lightning-icon>
+                                    <p>No add-ons found</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Create New Add-on Modal -->
+        <template if:true={isModalOpen}>
+            <div class="modal-overlay" onclick={closeModal}>
+                <div class="modal-container" onclick={stopProp}>
+                    <div class="modal-header">
+                        <h2 class="modal-title">Create New Add-on</h2>
+                        <button class="modal-close" onclick={closeModal}>×</button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="field-item">
+                            <label>Name <span class="required">*</span></label>
+                            <input type="text" placeholder="e.g., Extended Warranty" data-field="name" value={newAddon.name} oninput={handleInputChange}/>
+                        </div>
+
+                        <div class="field-item">
+                            <label>Description</label>
+                            <div class="textarea-wrapper">
+                                <textarea placeholder="Provide details about this add-on, such as key features, terms, and eligibility." 
+                                          data-field="description" oninput={handleInputChange} maxlength="255">{newAddon.description}</textarea>
+                                <span class="char-count">{descriptionCharCount}/255</span>
+                            </div>
+                        </div>
+
+                        <div class="field-row">
+                            <div class="field-item">
+                                <label>Price <span class="required">*</span></label>
+                                <div class="currency-input">
+                                    <span class="symbol">$</span>
+                                    <input type="number" step="0.01" placeholder="0.00" data-field="price" value={newAddon.price} oninput={handleInputChange}/>
+                                </div>
+                            </div>
+                            <div class="field-item">
+                                <label>Cost</label>
+                                <div class="currency-input">
+                                    <span class="symbol">$</span>
+                                    <input type="number" step="0.01" placeholder="0.00" data-field="cost" value={newAddon.cost} oninput={handleInputChange}/>
+                                </div>
+                            </div>
+                            <div class="field-item">
+                                <label>Billing Unit <span class="required">*</span></label>
+                                <select data-field="billingUnit" onchange={handleInputChange}>
+                                    <option value="Each">Each</option>
+                                    <option value="Hour">Hour</option>
+                                    <option value="Day">Day</option>
+                                    <option value="Month">Month</option>
+                                    <option value="Year">Year</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="section-divider">Location</div>
+                        
+                        <div class="field-row">
+                            <div class="field-item">
+                                <label>City</label>
+                                <input type="text" placeholder="San Francisco" data-field="city" value={newAddon.city} oninput={handleInputChange}/>
+                            </div>
+                            <div class="field-item">
+                                <label>State</label>
+                                <input type="text" placeholder="CA" data-field="state" value={newAddon.state} oninput={handleInputChange}/>
+                            </div>
+                            <div class="field-item">
+                                <label>Country</label>
+                                <input type="text" placeholder="USA" data-field="country" value={newAddon.country} oninput={handleInputChange}/>
+                            </div>
+                        </div>
+
+                        <div class="field-item">
+                            <label>Tags</label>
+                            <input type="text" placeholder="e.g., Service, Optional" data-field="tags" value={newAddon.tags} oninput={handleInputChange}/>
+                        </div>
+
+                        <div class="active-toggle-row">
+                            <label>Active</label>
+                            <div class="toggle-wrapper">
+                                <input type="checkbox" checked={newAddon.active} data-field="active" onchange={handleInputChange} class="toggle-input"/>
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button class="cancel-btn" onclick={closeModal}>Cancel</button>
+                        <button class="create-btn" onclick={saveAddon} disabled={isCreating}>
+                            <template if:true={isCreating}>Creating...</template>
+                            <template if:false={isCreating}>Create</template>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>

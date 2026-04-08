@@ -1,0 +1,189 @@
+<template>
+    <div class="accounts-container">
+        <!-- New Account Modal -->
+        <template if:true={showNewAccountModal}>
+            <div class="modal-overlay">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Create New Account</h2>
+                        <button class="close-btn" onclick={closeModal}>×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label class="form-label">Account Name</label>
+                            <input type="text" class="form-input" placeholder="Enter account name" data-field="Name" oninput={handleInputChange} value={newAccount.Name}/>
+                            <p class="form-hint">Choose a unique name for your account.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Type</label>
+                            <div class="custom-select-wrapper">
+                                <select class="form-select" data-field="Type" onchange={handleInputChange}>
+                                    <option value="None">None</option>
+                                    <template for:each={typeOptions} for:item="type">
+                                        <option key={type} value={type}>{type}</option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Industry</label>
+                            <div class="custom-select-wrapper">
+                                <select class="form-select" data-field="Industry" onchange={handleInputChange}>
+                                    <option value="None">None</option>
+                                    <template for:each={industryOptions} for:item="ind">
+                                        <option key={ind} value={ind}>{ind}</option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Phone</label>
+                            <div class="input-with-icon">
+                                <lightning-icon icon-name="utility:phone_portrait" size="xx-small" class="field-icon"></lightning-icon>
+                                <input type="text" class="form-input icon-padding" placeholder="Enter phone number" data-field="Phone" oninput={handleInputChange} value={newAccount.Phone}/>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Website</label>
+                            <div class="input-with-icon">
+                                <lightning-icon icon-name="utility:link" size="xx-small" class="field-icon"></lightning-icon>
+                                <input type="text" class="form-input icon-padding" placeholder="Enter website URL" data-field="Website" oninput={handleInputChange} value={newAccount.Website}/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="header-btn" onclick={closeModal}>Cancel</button>
+                        <button class="primary-btn" onclick={handleSaveAccount}>Create Account</button>
+                    </div>
+                </div>
+            </div>
+        </template>
+        <!-- Header -->
+        <div class="accounts-header">
+            <div class="header-left">
+                <button class="back-btn"><lightning-icon icon-name="utility:chevronleft" size="x-small"></lightning-icon></button>
+                <div>
+                    <h1 class="header-title">Accounts</h1>
+                    <p class="header-subtitle">View and manage your customer accounts and relationships</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="primary-btn" onclick={handleNewAccount}>+ New</button>
+                <button class="header-btn" onclick={refreshData}><lightning-icon icon-name="utility:refresh" size="xx-small"></lightning-icon> Refresh</button>
+                <button class="header-btn"><lightning-icon icon-name="utility:einstein" size="xx-small"></lightning-icon> AI Assistant</button>
+            </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="accounts-toolbar">
+            <div class="search-box">
+                <lightning-icon icon-name="utility:search" size="x-small" class="search-icon"></lightning-icon>
+                <input type="text" placeholder="Search accounts by name, phone, or email..." class="search-input" oninput={handleSearch}/>
+            </div>
+            
+            <div class="filters">
+                <!-- Type Filter -->
+                <div class="custom-dropdown">
+                    <button class="dropdown-btn" onclick={toggleTypeDropdown}>
+                        <lightning-icon icon-name="utility:filterList" size="xx-small" class="select-icon"></lightning-icon>
+                        <span class="btn-label">{selectedType}</span>
+                        <lightning-icon icon-name="utility:down" size="xx-small" class="chevron-icon"></lightning-icon>
+                    </button>
+                    <template if:true={isTypeDropdownOpen}>
+                        <div class="dropdown-menu">
+                            <ul>
+                                <li data-value="All Types" onclick={handleTypeSelect}>All Types</li>
+                                <template for:each={typeOptions} for:item="type">
+                                    <li key={type} data-value={type} onclick={handleTypeSelect}>{type}</li>
+                                </template>
+                            </ul>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Industry Filter -->
+                <div class="custom-dropdown">
+                    <button class="dropdown-btn" onclick={toggleIndustryDropdown}>
+                        <lightning-icon icon-name="utility:filterList" size="xx-small" class="select-icon"></lightning-icon>
+                        <span class="btn-label">{selectedIndustry}</span>
+                        <lightning-icon icon-name="utility:down" size="xx-small" class="chevron-icon"></lightning-icon>
+                    </button>
+                    <template if:true={isIndustryDropdownOpen}>
+                        <div class="dropdown-menu">
+                            <ul>
+                                <li data-value="All Industries" onclick={handleIndustrySelect}>All Industries</li>
+                                <template for:each={industryOptions} for:item="ind">
+                                    <li key={ind} data-value={ind} onclick={handleIndustrySelect}>{ind}</li>
+                                </template>
+                            </ul>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accounts Table Area -->
+        <div class="table-card">
+            <div class="stats-row">
+                <span>Showing {startIndex}-{endIndex} of {totalCount}</span>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="accounts-table">
+                    <thead>
+                        <tr>
+                            <th class="col-hash">#</th>
+                            <th>Name <lightning-icon icon-name="utility:sort" size="xx-small"></lightning-icon></th>
+                            <th>Account Number <lightning-icon icon-name="utility:sort" size="xx-small"></lightning-icon></th>
+                            <th>Type <lightning-icon icon-name="utility:sort" size="xx-small"></lightning-icon></th>
+                            <th>Industry <lightning-icon icon-name="utility:sort" size="xx-small"></lightning-icon></th>
+                            <th>Website <lightning-icon icon-name="utility:sort" size="xx-small"></lightning-icon></th>
+                            <th>Phone <lightning-icon icon-name="utility:sort" size="xx-small"></lightning-icon></th>
+                            <th class="col-actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={filteredAccounts} for:item="acc">
+                            <tr key={acc.Id}>
+                                <td>{acc.indexNumber}</td>
+                                <td>
+                                    <a href={acc.recordUrl} class="account-link">{acc.Name}</a>
+                                </td>
+                                <td>{acc.AccountNumber}</td>
+                                <td>
+                                    <span class={acc.typeClass}>{acc.Type}</span>
+                                </td>
+                                <td>
+                                    <span class="industry-badge">{acc.Industry}</span>
+                                </td>
+                                <td>{acc.Website}</td>
+                                <td>{acc.Phone}</td>
+                                <td class="col-actions">
+                                    <button class="action-icon-btn" title="Delete" onclick={handleDelete} data-id={acc.Id}>
+                                        <lightning-icon icon-name="utility:delete" size="xx-small"></lightning-icon>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                        <template if:false={hasAccounts}>
+                            <tr>
+                                <td colspan="8" class="empty-row">No accounts found matching your criteria.</td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination-bar">
+                <button class="pagily-btn" disabled><lightning-icon icon-name="utility:chevronleft" size="xx-small"></lightning-icon> Previous</button>
+                <span class="page-info">Page 1 of 1</span>
+                <button class="pagily-btn" disabled>Next <lightning-icon icon-name="utility:chevronright" size="xx-small"></lightning-icon></button>
+            </div>
+        </div>
+    </div>
+</template>
