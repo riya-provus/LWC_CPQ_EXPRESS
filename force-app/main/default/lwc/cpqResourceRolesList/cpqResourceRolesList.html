@@ -1,0 +1,240 @@
+<template>
+    <div class="roles-container">
+        <!-- Header -->
+        <div class="roles-header">
+            <div class="header-left">
+                <button class="back-btn"><lightning-icon icon-name="utility:chevronleft" size="x-small"></lightning-icon></button>
+                <div>
+                    <h1 class="header-title">Resource Roles</h1>
+                    <p class="header-subtitle">Manage Resource Roles and billing prices for your organization</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="primary-btn" onclick={openModal}>+ New</button>
+                <button class="header-btn"><lightning-icon icon-name="utility:import" size="xx-small"></lightning-icon> Import</button>
+                <button class="header-btn" onclick={refreshData}><lightning-icon icon-name="utility:refresh" size="xx-small"></lightning-icon> Refresh</button>
+                <button class="header-btn"><lightning-icon icon-name="utility:einstein" size="xx-small"></lightning-icon> AI Assistant</button>
+            </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="roles-toolbar">
+            <div class="search-box">
+                <lightning-icon icon-name="utility:search" size="x-small" class="search-icon"></lightning-icon>
+                <input type="text" placeholder="Search Resource Roles by name or location..." class="search-input" oninput={handleSearch}/>
+            </div>
+            
+            <div class="filters">
+                <!-- Status Filter -->
+                <div class="custom-dropdown">
+                    <button class="dropdown-btn" onclick={toggleStatusDropdown}>
+                        <span class="btn-label">{selectedStatus}</span>
+                        <lightning-icon icon-name="utility:down" size="xx-small" class="chevron-icon"></lightning-icon>
+                    </button>
+                    <template if:true={isStatusDropdownOpen}>
+                        <div class="dropdown-menu">
+                            <ul>
+                                <li data-value="All Status" onclick={handleStatusSelect}>All Status</li>
+                                <li data-value="Active" onclick={handleStatusSelect}>Active</li>
+                                <li data-value="Inactive" onclick={handleStatusSelect}>Inactive</li>
+                            </ul>
+                        </div>
+                    </template>
+                </div>
+
+                <button class="header-btn"><lightning-icon icon-name="utility:filterList" size="xx-small"></lightning-icon> Filters</button>
+                
+                <!-- View Settings -->
+                <div class="custom-dropdown">
+                    <button class="header-btn" onclick={toggleViewDropdown}>
+                        <lightning-icon icon-name="utility:rows" size="xx-small"></lightning-icon> View <span class="badge">{visibleColumnCount}</span>
+                    </button>
+                    <template if:true={isViewDropdownOpen}>
+                        <div class="view-settings-menu">
+                            <div class="view-header">
+                                <span class="view-title">View Settings</span>
+                                <button class="reset-text-btn" onclick={resetView}>Reset</button>
+                            </div>
+                            <div class="density-section">
+                                <div class="section-label">Density</div>
+                                <div class="density-toggle">
+                                    <button class={densityDefaultClass} onclick={setDensityDefault}>Default</button>
+                                    <button class={densityCompactClass} onclick={setDensityCompact}>Compact</button>
+                                </div>
+                            </div>
+                            <div class="fields-section">
+                                <span class="section-label">Fields</span>
+                                <div class="fields-list">
+                                    <template for:each={columns} for:item="col">
+                                        <div key={col.id} class="field-item">
+                                            <input type="checkbox" checked={col.visible} data-id={col.id} onchange={handleColumnToggle} disabled={col.locked}/>
+                                            <span class="field-name">{col.label}</span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table Area -->
+        <div class="table-card">
+            <div class="stats-row">
+                <span>Showing {startIndex}-{endIndex} of {totalCount}</span>
+            </div>
+
+            <div class="table-wrapper">
+                <table class={tableClass}>
+                    <thead>
+                        <tr>
+                            <th class="col-check"><input type="checkbox"/></th>
+                            <th if:true={showHash} class="col-hash">#</th>
+                            <th if:true={showId}>ID <lightning-icon icon-name="utility:sort" size="xx-small"></lightning-icon></th>
+                            <th if:true={showName}>Name <lightning-icon icon-name="utility:sort" size="xx-small"></lightning-icon></th>
+                            <th if:true={showLocation}>Location <lightning-icon icon-name="utility:sort" size="xx-small"></lightning-icon></th>
+                            <th if:true={showBillingUnit}>Billing Unit <lightning-icon icon-name="utility:sort" size="xx-small"></lightning-icon></th>
+                            <th if:true={showPrice}>Price <lightning-icon icon-name="utility:sort" size="xx-small"></lightning-icon></th>
+                            <th if:true={showCost}>Cost <lightning-icon icon-name="utility:sort" size="xx-small"></lightning-icon></th>
+                            <th if:true={showActive}>Active <lightning-icon icon-name="utility:sort" size="xx-small"></lightning-icon></th>
+                            <th class="col-actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={filteredRoles} for:item="role">
+                            <tr key={role.Id}>
+                                <td><input type="checkbox"/></td>
+                                <td if:true={showHash}>{role.indexNumber}</td>
+                                <td if:true={showId}><a href={role.recordUrl} class="role-link">{role.Role_ID__c}</a></td>
+                                <td if:true={showName}>
+                                    <div class="role-name-cell">
+                                        <span class="role-name">{role.Name}</span>
+                                        <template if:true={role.Description__c}><span class="role-subtext">{role.Description__c}</span></template>
+                                    </div>
+                                </td>
+                                <td if:true={showLocation}>{role.displayLocation}</td>
+                                <td if:true={showBillingUnit}>
+                                    <span class="unit-badge">{role.Billing_Unit__c}</span>
+                                </td>
+                                <td if:true={showPrice} class="col-money">{role.formattedPrice}</td>
+                                <td if:true={showCost} class="col-money">{role.formattedCost}</td>
+                                <td if:true={showActive}>
+                                    <div class="toggle-wrapper">
+                                        <input type="checkbox" checked={role.Active__c} data-id={role.Id} onchange={handleToggleActive} class="toggle-input"/>
+                                        <span class="toggle-slider"></span>
+                                    </div>
+                                </td>
+                                <td class="col-actions">
+                                    <button class="action-icon-btn" title="Delete" onclick={handleDelete} data-id={role.Id}>
+                                        <lightning-icon icon-name="utility:delete" size="xx-small"></lightning-icon>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                        <template if:false={hasRoles}>
+                            <tr>
+                                <td colspan="10" class="empty-row">No resource roles found.</td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination-bar">
+                <button class="pagily-btn" disabled><lightning-icon icon-name="utility:chevronleft" size="xx-small"></lightning-icon> Previous</button>
+                <span class="page-info">Page 1 of 1</span>
+                <button class="pagily-btn" disabled>Next <lightning-icon icon-name="utility:chevronright" size="xx-small"></lightning-icon></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create New Resource Role Modal -->
+    <template if:true={isModalOpen}>
+        <div class="modal-overlay" onclick={closeModal}>
+            <div class="modal-container" onclick={stopProp}>
+                <div class="modal-header">
+                    <h2 class="modal-title">Create New Resource Role</h2>
+                    <button class="modal-close" onclick={closeModal}>×</button>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="field-item">
+                        <label>Name <span class="required">*</span></label>
+                        <input type="text" placeholder="e.g., Senior Software Engineer" data-field="name" onchange={handleInputChange}/>
+                    </div>
+
+                    <div class="field-item">
+                        <label>Description</label>
+                        <div class="textarea-wrapper">
+                            <textarea placeholder="Provide details about this role, such as responsibilities, skill set, and experience." 
+                                      data-field="description" oninput={handleDescInput} maxlength="255"></textarea>
+                            <span class="char-count">{charCount}/255</span>
+                        </div>
+                    </div>
+
+                    <div class="field-row">
+                        <div class="field-item">
+                            <label>Price <span class="required">*</span></label>
+                            <div class="currency-input">
+                                <span class="symbol">$</span>
+                                <input type="number" step="0.01" placeholder="0.00" data-field="price" onchange={handleInputChange}/>
+                            </div>
+                        </div>
+                        <div class="field-item">
+                            <label>Cost</label>
+                            <div class="currency-input">
+                                <span class="symbol">$</span>
+                                <input type="number" step="0.01" placeholder="0.00" data-field="cost" onchange={handleInputChange}/>
+                            </div>
+                        </div>
+                        <div class="field-item">
+                            <label>Billing Unit <span class="required">*</span></label>
+                            <select data-field="billingUnit" onchange={handleInputChange}>
+                                <option value="Hour">Hour</option>
+                                <option value="Day">Day</option>
+                                <option value="Month">Month</option>
+                                <option value="Year">Year</option>
+                                <option value="One Time">One Time</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="section-divider">Location</div>
+                    
+                    <div class="field-row">
+                        <div class="field-item">
+                            <label>City</label>
+                            <input type="text" placeholder="San Francisco" data-field="city" onchange={handleInputChange}/>
+                        </div>
+                        <div class="field-item">
+                            <label>State</label>
+                            <input type="text" placeholder="CA" data-field="state" onchange={handleInputChange}/>
+                        </div>
+                        <div class="field-item">
+                            <label>Country</label>
+                            <input type="text" placeholder="USA" data-field="country" onchange={handleInputChange}/>
+                        </div>
+                    </div>
+
+                    <div class="active-toggle-row">
+                        <label>Active</label>
+                        <div class="toggle-wrapper">
+                            <input type="checkbox" checked={newRoleActive} onchange={handleActiveToggle} class="toggle-input"/>
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="cancel-btn" onclick={closeModal}>Cancel</button>
+                    <button class="create-btn" onclick={handleCreate} disabled={isCreating}>
+                        <template if:true={isCreating}>Creating...</template>
+                        <template if:false={isCreating}>Create</template>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+</template>

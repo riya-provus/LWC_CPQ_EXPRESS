@@ -1,0 +1,212 @@
+<template>
+    <div class="app-wrapper">
+        <!-- Sidebar -->
+        <div class="app-sidebar">
+            <div class="sidebar-menu">
+                <ul>
+                    <li class={dashboardClass} data-target="Dashboard" onclick={handleSidebarNav}><lightning-icon icon-name="standard:dashboard" size="small" class={dashboardIconClass}></lightning-icon> Dashboard</li>
+                    <li class={quotesClass} data-target="Quotes" onclick={handleSidebarNav}><lightning-icon icon-name="standard:quotes" size="small" class={quotesIconClass}></lightning-icon> Quotes</li>
+                    <li class={accountsClass} data-target="Accounts" onclick={handleSidebarNav}><lightning-icon icon-name="standard:account" size="small" class={accountsIconClass}></lightning-icon> Accounts</li>
+                    <li class={resourceRolesClass} data-target="ResourceRoles" onclick={handleSidebarNav}><lightning-icon icon-name="standard:user" size="small" class={resourceRolesIconClass}></lightning-icon> Resource Roles</li>
+                    <li class={productsClass} data-target="Products" onclick={handleSidebarNav}><lightning-icon icon-name="standard:product" size="small" class={productsIconClass}></lightning-icon> Products</li>
+                    <li class={addonsClass} data-target="Addons" onclick={handleSidebarNav}><lightning-icon icon-name="standard:apps" size="small" class={addonsIconClass}></lightning-icon> Add-ons</li>
+                    <li><lightning-icon icon-name="utility:einstein" size="small" class="sidebar-icon"></lightning-icon> AI Assistant</li>
+                </ul>
+            </div>
+            <div class="sidebar-footer">
+                <ul>
+                    <li><lightning-icon icon-name="utility:smile" size="small" class="sidebar-icon"></lightning-icon> Feedback</li>
+                    <li><lightning-icon icon-name="utility:setup_assistant_guide" size="small" class="sidebar-icon"></lightning-icon> Take a Tour</li>
+                    <li><lightning-icon icon-name="utility:settings" size="small" class="sidebar-icon"></lightning-icon> Settings</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Workspace -->
+        <div class="app-workspace">
+            
+            <template if:true={isDashboardView}>
+                <!-- Top Header -->
+                <div class="app-header">
+                <div class="header-left">
+                    <div class="header-title-row">
+                        <button class="back-btn"><lightning-icon icon-name="utility:chevronleft" size="x-small"></lightning-icon></button>
+                        <h1 class="header-title">Dashboard</h1>
+                    </div>
+                    <p class="header-subtitle">Key insights about your quotes</p>
+                </div>
+                <div class="header-right">
+                    <button class="header-pill"><lightning-icon icon-name="utility:refresh" size="xx-small"></lightning-icon> Refresh</button>
+                    <button class="header-pill"><lightning-icon icon-name="utility:einstein" size="xx-small"></lightning-icon> AI Assistant</button>
+                </div>
+            </div>
+
+            <!-- Dashboard Content Scrollable -->
+            <div class="app-content-container">
+                
+                <!-- Left Details Area -->
+                <div class="dashboard-main">
+                    
+                    <div class="greeting-bar">
+                        <h2>{greeting}</h2>
+                    </div>
+
+                    <div class="ai-search-card">
+                        <div class="ai-search-row">
+                            <div class="ai-logo-box">
+                                <lightning-icon icon-name="utility:einstein" size="small" variant="inverse"></lightning-icon>
+                            </div>
+                            <input type="text" class="ai-input-field" placeholder="Ask AI anything about your quotes, resources, products..." />
+                            <button class="ai-action-btn">Ask AI &rarr;</button>
+                        </div>
+                        <div class="ai-chips-row">
+                            <span class="chips-label">💡 Try:</span>
+                            <div class="chips-container-scroll">
+                                <button class="chip">Help me create quote</button>
+                                <button class="chip">Clone an existing quote</button>
+                                <button class="chip">Show all quotes</button>
+                                <button class="chip">List accounts</button>
+                                <button class="chip">Show all resource roles</button>
+                                <button class="chip">Quotes pending a</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="insights-heading">Quote Insights</h3>
+                    <div class="insights-grid">
+                        
+                        <!-- Insight 1: Awaiting Approval (Yellow) -->
+                        <div class="insight-box box-yellow">
+                            <lightning-icon icon-name="utility:info" size="xx-small" class="info-icon"></lightning-icon>
+                            <div class="insight-number">{awaitingApprovalCount}</div>
+                            <div class="insight-title">Awaiting Your<br/>Approval</div>
+                            <div class="insight-subtitle">${awaitingApprovalCount} pending your review</div>
+                            <div class="insight-btn" style="background-color: #fef08a;">Review Now &rarr;</div>
+                        </div>
+                        
+                        <!-- Insight 2: Low Margin (Pink) -->
+                        <div class="insight-box box-pink">
+                            <lightning-icon icon-name="utility:info" size="xx-small" class="info-icon"></lightning-icon>
+                            <div class="insight-number">{lowMarginCount}</div>
+                            <div class="insight-title">Low Margin Drafts</div>
+                            <div class="insight-subtitle">{lowMarginAmountStr} draft quotes at risk - margins below 15%</div>
+                            <div class="insight-btn" style="background-color: #fbcfe8;">Review Margins &rarr;</div>
+                        </div>
+                        
+                        <!-- Insight 3: Draft Pipeline (Blue) -->
+                        <div class="insight-box box-blue">
+                            <lightning-icon icon-name="utility:info" size="xx-small" class="info-icon"></lightning-icon>
+                            <div class="insight-number">{draftPipelineCount}</div>
+                            <div class="insight-title">Draft Pipeline</div>
+                            <div class="insight-subtitle">{draftPipelineAmountStr} potential revenue in drafts</div>
+                            <div class="insight-btn" style="background-color: #bfdbfe;">View Drafts &rarr;</div>
+                        </div>
+                        
+                        <!-- Insight 4: High Margin (Teal) -->
+                        <div class="insight-box box-teal">
+                            <lightning-icon icon-name="utility:info" size="xx-small" class="info-icon"></lightning-icon>
+                            <div class="insight-number">{highMarginDealCount}</div>
+                            <div class="insight-title">High Margin Deals</div>
+                            <div class="insight-subtitle">{highMarginDealAmountStr} with 35%+ profit margin</div>
+                            <div class="insight-btn" style="background-color: #99f6e4;">View Opportunities &rarr;</div>
+                        </div>
+                        
+                        <!-- Insight 5: Won This Month (Green) -->
+                        <div class="insight-box box-green">
+                            <lightning-icon icon-name="utility:info" size="xx-small" class="info-icon"></lightning-icon>
+                            <div class="insight-number">{wonThisMonthCount}</div>
+                            <div class="insight-title">Won This Month</div>
+                            <div class="insight-subtitle">{wonThisMonthAmountStr} closed won this month</div>
+                            <div class="insight-btn" style="background-color: #a7f3d0;">View Wins &rarr;</div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- Right Area -->
+                <div class="dashboard-sidebar">
+                    <div class="draft-quotes-card">
+                        
+                        <div class="dq-header">
+                            <h3 class="dq-title">{quoteListTitle}</h3>
+                            <p class="dq-subtitle">{quotesTotalMessage}</p>
+                        </div>
+                        
+                        <div class="dq-tabs-bg">
+                            <template for:each={tabs} for:item="tab">
+                                <button key={tab.name} class={tab.class} data-tab={tab.name} onclick={handleTabClick}>{tab.name}</button>
+                            </template>
+                        </div>
+
+                        <button class="create-new-btn" onclick={handleCreateQuote}>
+                            + Create New Quote
+                        </button>
+
+                        <div class="dq-list-area">
+                            <template if:true={hasQuotes}>
+                                <ul class="quotes-list">
+                                    <template for:each={processedQuotes} for:item="quote">
+                                        <li key={quote.Id} class="quote-item-card">
+                                            <div class="qi-left">
+                                                <div class="qi-icon-box">
+                                                    <lightning-icon icon-name="doctype:txt" size="medium" class="qi-doc-icon" variant="success"></lightning-icon>
+                                                </div>
+                                                <div class="qi-details">
+                                                    <div class="qi-top-row">
+                                                        <span class="qi-name">{quote.Name}</span>
+                                                        <span class={quote.statusClass}>{quote.Status}</span>
+                                                    </div>
+                                                    <div class="qi-bottom-row">
+                                                        <lightning-icon icon-name="utility:event" size="xx-small" class="calendar-icon"></lightning-icon>
+                                                        <span class="qi-date">{quote.formattedDate}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="qi-amount">
+                                                <lightning-formatted-number value={quote.Total_Amount__c} format-style="currency" currency-code="USD" maximum-fraction-digits="0"></lightning-formatted-number>
+                                            </div>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </template>
+                            <template if:false={hasQuotes}>
+                                <div class="dq-empty-state">
+                                    <div class="document-icon"><lightning-icon icon-name="doctype:txt" size="large"></lightning-icon></div>
+                                    <p>No {activeTab} quotes found.</p>
+                                </div>
+                            </template>
+                        </div>
+                        
+                    </div>
+                </div>
+
+            </div>
+            </template>
+
+            <template if:true={isQuotesView}>
+                <c-cpq-quotes-list onquoteclick={handleQuoteClick}></c-cpq-quotes-list>
+            </template>
+
+            <template if:true={isQuoteExplorerView}>
+                <c-cpq-quote-explorer quote-id={selectedQuoteId} onback={handleBackToList}></c-cpq-quote-explorer>
+            </template>
+
+            <template if:true={isAccountsView}>
+                <c-cpq-accounts-list></c-cpq-accounts-list>
+            </template>
+
+            <template if:true={isResourceRolesView}>
+                <c-cpq-resource-roles-list></c-cpq-resource-roles-list>
+            </template>
+
+            <template if:true={isProductsView}>
+                <c-cpq-products-list></c-cpq-products-list>
+            </template>
+
+            <template if:true={isAddonsView}>
+                <c-cpq-addons-list></c-cpq-addons-list>
+            </template>
+        </div>
+    </div>
+</template>

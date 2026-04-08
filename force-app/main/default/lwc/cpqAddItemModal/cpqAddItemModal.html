@@ -1,0 +1,89 @@
+<template>
+    <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open slds-modal_medium">
+        <div class="slds-modal__container">
+            <!-- Modal Header -->
+            <header class="slds-modal__header">
+                <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={handleClose}>
+                    <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small"></lightning-icon>
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <h2 class="slds-text-heading_medium slds-hyphenate">Add Quote Line Items</h2>
+                <p class="slds-m-top_x-small">Select Products, Add-ons, Resource Roles to add to your quote.</p>
+            </header>
+
+            <!-- Modal Body -->
+            <div class="slds-modal__content slds-p-around_medium modal-body-scroll">
+                <!-- Tab Navigation -->
+                <div class="tab-nav-container">
+                    <template for:each={tabs} for:item="tab">
+                        <button key={tab.id} 
+                                class={tab.className} 
+                                onclick={handleTabClick} 
+                                data-id={tab.id}>
+                            <lightning-icon icon-name={tab.icon} size="x-small" class="tab-icon"></lightning-icon>
+                            {tab.label} ({tab.count})
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="search-container slds-m-vertical_medium">
+                    <lightning-input
+                        name="enter-search"
+                        label="Search"
+                        type="search"
+                        placeholder="Search by name, description, or ID..."
+                        variant="label-hidden"
+                        onchange={handleSearch}
+                        class="search-input"
+                    ></lightning-input>
+                </div>
+
+                <!-- Filters -->
+                <div class="filter-row slds-m-bottom_medium">
+                    <div class="filter-btns">
+                        <button class="filter-btn active">Name <lightning-icon icon-name="utility:arrowup" size="xx-small"></lightning-icon></button>
+                        <button class="filter-btn">Price</button>
+                        <button class="filter-btn"><lightning-icon icon-name="utility:filterList" size="xx-small"></lightning-icon> Price Filter</button>
+                    </div>
+                </div>
+
+                <!-- Item Cards -->
+                <div class="item-list-container">
+                    <template if:true={isLoading}>
+                        <lightning-spinner alternative-text="Loading items..." size="small"></lightning-spinner>
+                    </template>
+                    <template if:false={isLoading}>
+                        <template for:each={filteredItems} for:item="item">
+                            <div key={item.Id} class={item.cardClass} onclick={handleItemSelect} data-id={item.Id}>
+                                <div class="card-left">
+                                    <lightning-input type="checkbox" checked={item.selected} variant="label-hidden" class="item-checkbox"></lightning-input>
+                                    <div class="item-details">
+                                        <div class="item-name">{item.Name}</div>
+                                        <div class="item-desc">{item.Description}</div>
+                                    </div>
+                                </div>
+                                <div class="card-right">
+                                    <span class="item-price">{item.formattedPrice}</span>
+                                    <lightning-icon icon-name="utility:info" size="xx-small" class="info-icon"></lightning-icon>
+                                </div>
+                            </div>
+                        </template>
+                        <template if:false={hasItems}>
+                            <div class="empty-state">No items found matching your search.</div>
+                        </template>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <footer class="slds-modal__footer">
+                <button class="secondary-btn" onclick={handleClose}>Cancel</button>
+                <button class="primary-btn" onclick={handleAdd} disabled={isNoneSelected}>
+                    Add {selectedCount} Items
+                </button>
+            </footer>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+</template>

@@ -1,0 +1,374 @@
+<template>
+    <div class="explorer-container">
+        <!-- Header -->
+        <div class="explorer-header-sticky">
+            <div class="header-main">
+                <div class="header-left">
+                    <button class="icon-btn-back" onclick={handleBack} title="Back to List">
+                        <lightning-icon icon-name="utility:chevronleft" size="small"></lightning-icon>
+                    </button>
+                    <div class="quote-id-section">
+                        <div class="quote-tag">Quote Detail</div>
+                        <h1 class="quote-number">
+                            {summary.quoteNumber} 
+                            <lightning-icon if:false={isReadOnly} icon-name="utility:edit" size="xx-small" class="edit-icon"></lightning-icon>
+                        </h1>
+                        <p class="quote-description">
+                            {summary.description} 
+                            <lightning-icon if:true={showEditDescriptionIcon} icon-name="utility:edit" size="xx-small" class="edit-icon"></lightning-icon>
+                        </p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <!-- Submit for Approval: shown for Draft quotes -->
+                    <template if:true={canSubmitForApproval}>
+                        <button class="submit-approval-btn" onclick={handleSubmitForApproval} disabled={isSubmitting}>
+                            <lightning-icon icon-name="utility:approval" size="xx-small" alternative-text="Submit"></lightning-icon>
+                            {submitBtnLabel}
+                        </button>
+                    </template>
+                    <!-- Recall / Approve / Reject: shown when In Review -->
+                    <template if:true={isInReview}>
+                        <button class="review-btn recall" onclick={handleRecall} disabled={isProcessingAction}>
+                            <lightning-icon icon-name="utility:undo" size="xx-small" alternative-text="Recall"></lightning-icon>
+                            Recall
+                        </button>
+                        <button class="review-btn approve" onclick={handleApprove} disabled={isProcessingAction}>
+                            <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Approve"></lightning-icon>
+                            Approve
+                        </button>
+                        <button class="review-btn reject" onclick={handleReject} disabled={isProcessingAction}>
+                            <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Reject"></lightning-icon>
+                            Reject
+                        </button>
+                    </template>
+                    <button class="secondary-btn" title="Generate PDF">
+                        <lightning-icon icon-name="utility:pdf_ext" size="xx-small" alternative-text="PDF"></lightning-icon> Generate PDF
+                    </button>
+                    <button if:false={isReadOnly} class="primary-btn" onclick={handleSave}>Save</button>
+                    <button class="icon-btn-action" title="AI Assistant">
+                        <lightning-icon icon-name="utility:einstein" size="xx-small" alternative-text="AI"></lightning-icon>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Simple Layout Metrics Bar -->
+            <div class="metrics-bar-simple">
+                <div class="metrics-row">
+                    <span class="m-label total">Total amount</span>
+                    <span class="m-value total">{formattedTotal}</span>
+                    
+                    <span class="m-label">Subtotal</span>
+                    <span class="m-value">{formattedSubtotal}</span>
+                    
+                    <span class="m-label">Margin</span>
+                    <span class="m-value">{formattedMargin}</span>
+                    <lightning-icon icon-name="utility:info" size="xx-small" class="m-icon" title="Margin is calculated against cost"></lightning-icon>
+                    
+                    <span class="m-label">Discount</span>
+                    <span class="m-value">{formattedDiscount}</span>
+                    
+                    <span class="m-label">Start date</span>
+                    <span class="m-value">{formattedCreatedDate}</span>
+                    
+                    <span class="m-label">End date</span>
+                    <span class="m-value">{formattedExpDate}</span>
+                </div>
+                <div class="metrics-row" style="margin-top: -0.25rem;">
+                    <span class="m-label">Quote time period</span>
+                    <span class="m-value">Months</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs-bar">
+            <template for:each={tabs} for:item="tab">
+                <div key={tab.name} class={tab.class} data-tab={tab.name} onclick={handleTabClick}>
+                    {tab.name}
+                </div>
+            </template>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="explorer-content">
+            <!-- Loading Spinner -->
+            <template if:true={isLoading}>
+                <div class="loading-state">
+                    <lightning-spinner alternative-text="Loading Quote Details..." size="medium"></lightning-spinner>
+                </div>
+            </template>
+
+            <!-- Summary View -->
+            <template if:false={isLoading}>
+                <template if:true={isSummaryActive}>
+                    <div class="content-grid">
+                        <!-- Left Section (Main Details) -->
+                        <div class="main-details-panel">
+                            <!-- Context Card -->
+                            <div class="detail-card context-card">
+                                <div class="card-grid">
+                                    <div class="card-field">
+                                        <span class="field-label">Opportunity</span>
+                                        <span class="field-value link">{summary.opportunityName}</span>
+                                    </div>
+                                    <div class="card-field">
+                                        <span class="field-label">Account</span>
+                                        <span class="field-value link">{summary.accountName}</span>
+                                    </div>
+                                    <div class="card-field">
+                                        <span class="field-label">Primary Quote</span>
+                                        <span class="field-value">No</span>
+                                    </div>
+                                    <div class="card-field">
+                                        <span class="field-label">Currency</span>
+                                        <span class="field-value">USD</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Revenue Summary Row -->
+                            <div class="revenue-grid">
+                                <div class="rev-card labor">
+                                    <div class="rev-header">
+                                        <lightning-icon icon-name="utility:user" size="small" class="rev-icon blue"></lightning-icon>
+                                        <span class="rev-label">Labor Revenue</span>
+                                    </div>
+                                    <div class="rev-body">
+                                        <span class="rev-amount">{laborRevenue}</span>
+                                        <span class="rev-badge blue">5 Items</span>
+                                    </div>
+                                </div>
+                                <div class="rev-card products">
+                                    <div class="rev-header">
+                                        <lightning-icon icon-name="utility:package" size="small" class="rev-icon green"></lightning-icon>
+                                        <span class="rev-label">Products Revenue</span>
+                                    </div>
+                                    <div class="rev-body">
+                                        <span class="rev-amount">{productRevenue}</span>
+                                        <span class="rev-badge green">12 Items</span>
+                                    </div>
+                                </div>
+                                <div class="rev-card addons">
+                                    <div class="rev-header">
+                                        <lightning-icon icon-name="utility:ad_set" size="small" class="rev-icon amber"></lightning-icon>
+                                        <span class="rev-label">Add-ons Revenue</span>
+                                    </div>
+                                    <div class="rev-body">
+                                        <span class="rev-amount">{addonRevenue}</span>
+                                        <span class="rev-badge amber">3 Items</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Breakdown Charts Area -->
+                            <div class="charts-section">
+                                <!-- Item Type Breakdown -->
+                                <div class="chart-card">
+                                    <h3 class="chart-title">Item Type Breakdown</h3>
+                                    <div class="custom-bar-chart">
+                                        <template for:each={calculatedBreakdown} for:item="item">
+                                            <div key={item.label} class="bar-group">
+                                                <div class="bar-label-row">
+                                                    <span class="bar-label">{item.label}</span>
+                                                    <span class="bar-percent">{item.percentage}%</span>
+                                                </div>
+                                                <div class="bar-track">
+                                                    <div class="bar-fill" style={item.style}></div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- Phase Breakdown -->
+                                <div class="chart-card">
+                                    <h3 class="chart-title">Project Phase Breakdown</h3>
+                                    <div class="custom-bar-chart">
+                                        <template for:each={phaseBreakdown} for:item="phase">
+                                            <div key={phase.label} class="bar-group">
+                                                <div class="bar-label-row">
+                                                    <span class="bar-label">{phase.label}</span>
+                                                    <span class="bar-percent">${phase.value}</span>
+                                                </div>
+                                                <div class="bar-track">
+                                                    <div class="bar-fill" style="width: 60%; background-color: #3b82f6;"></div> <!-- Dynamic logic simplified for now -->
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Sidebar (Metadata & Logs) -->
+                        <div class="explorer-sidebar">
+                            <!-- Approval History Card -->
+                            <div class="sidebar-card">
+                                <h3 class="sidebar-title">Approval History</h3>
+                                <div class="history-list">
+                                    <template for:each={approvalHistory} for:item="step">
+                                        <div key={step.id} class="history-item">
+                                            <div class="history-marker-line">
+                                                <div class={step.statusClass}></div>
+                                            </div>
+                                            <div class="history-content">
+                                                <div class="history-header">
+                                                    <span class="history-status">{step.status}</span>
+                                                    <span class="history-date">{step.formattedDate}</span>
+                                                </div>
+                                                <p class="history-actor">By {step.actorName}</p>
+                                                <p if:true={step.comments} class="history-comment">"{step.comments}"</p>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Line Items View -->
+                <template if:true={isLineItemsActive}>
+                    <div class="line-items-view">
+                        <div class="view-header slds-m-bottom_medium">
+                            <div class="view-actions">
+                                <button class="action-btn" title="Collapse All Phases">
+                                    <lightning-icon icon-name="utility:chevronright" size="xx-small" alternative-text="Collapse"></lightning-icon> 
+                                    Collapse All
+                                </button>
+                                <button if:false={isReadOnly} class="action-btn" title="Add New Project Phase">+ Add Phase</button>
+                                <button if:false={isReadOnly} class="primary-btn" onclick={openAddItemModal} title="Add Products or Roles">+ Add Item</button>
+                            </div>
+                        </div>
+
+                        <div class="custom-table-container">
+                            <table class="line-items-table">
+                                <thead>
+                                    <tr>
+                                        <th class="col-name">Name</th>
+                                        <th class="col-task">Task</th>
+                                        <th class="col-date">Start Date</th>
+                                        <th class="col-date">End Date</th>
+                                        <th class="col-qty">Quantity</th>
+                                        <th class="col-rate">Base Rate</th>
+                                        <th class="col-price">Unit Price</th>
+                                        <th class="col-discount">Discount %</th>
+                                        <th class="col-total">Total Price</th>
+                                        <th class="col-actions"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template for:each={draftItems} for:item="item">
+                                        <tr key={item.id} class="item-row">
+                                            <td class="cell-name">
+                                                <div class="cell-content">
+                                                    <lightning-icon icon-name={item.icon} size="x-small" class="item-icon-small"></lightning-icon>
+                                                    {item.name}
+                                                </div>
+                                            </td>
+                                            <td class="cell-task">
+                                                <lightning-input value="Add task..." variant="label-hidden" class="inline-input" disabled={isReadOnly}></lightning-input>
+                                            </td>
+                                            <td class="cell-date">
+                                                <lightning-input type="date" value={item.startDate} data-id={item.id} data-field="startDate" onchange={handleInputChange} variant="label-hidden" disabled={isReadOnly}></lightning-input>
+                                            </td>
+                                            <td class="cell-date">
+                                                <lightning-input type="date" value={item.endDate} data-id={item.id} data-field="endDate" onchange={handleInputChange} variant="label-hidden" disabled={isReadOnly}></lightning-input>
+                                            </td>
+                                            <td class="cell-qty">
+                                                <lightning-input type="number" value={item.quantity} data-id={item.id} data-field="quantity" onchange={handleInputChange} variant="label-hidden" disabled={isReadOnly}></lightning-input>
+                                            </td>
+                                            <td class="cell-rate">${item.baseRate}</td>
+                                            <td class="cell-price">
+                                                <lightning-input type="number" value={item.unitPrice} data-id={item.id} data-field="unitPrice" onchange={handleInputChange} variant="label-hidden" formatter="currency" disabled={isReadOnly}></lightning-input>
+                                            </td>
+                                            <td class="cell-discount">
+                                                <lightning-input type="number" value={item.discount} data-id={item.id} data-field="discount" onchange={handleInputChange} variant="label-hidden" disabled={isReadOnly}></lightning-input>
+                                            </td>
+                                            <td class="cell-total">{item.totalValue}</td>
+                                            <td class="cell-actions">
+                                                <button if:false={isReadOnly} class="delete-item-btn" data-id={item.id} data-is-new={item.isNew} onclick={handleDeleteItem} title="Remove item">
+                                                    <lightning-icon icon-name="utility:delete" size="xx-small" alternative-text="Delete"></lightning-icon>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="total-row">
+                                        <td colspan="8">Total</td>
+                                        <td>{formattedTotal}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Timeline View -->
+                <template if:true={isTimelineActive}>
+                    <div class="timeline-view">
+                        <div class="view-header slds-m-bottom_medium" style="justify-content: space-between;">
+                            <div class="legend">
+                                <span class="legend-item"><span class="dot product"></span> Product</span>
+                                <span class="legend-item"><span class="dot addon"></span> Add-on</span>
+                                <span class="legend-item"><span class="dot labor"></span> Resource Role</span>
+                            </div>
+                            <button if:false={isReadOnly} class="primary-btn" title="Add Project Milestone"><lightning-icon icon-name="utility:add" size="xx-small"></lightning-icon> Add Milestone</button>
+                        </div>
+
+                        <div class="timeline-container">
+                            <div class="timeline-grid">
+                                <!-- Timeline Header (Months) -->
+                                <div class="timeline-header-row">
+                                    <div class="col-info header">
+                                        <span>Issues</span>
+                                        <span>Duration</span>
+                                    </div>
+                                    <div class="col-track">
+                                        <div class="month-label" style="grid-column: 1 / span 7; text-align: left; border: none; padding-bottom: 8px;">2026</div>
+                                        <div class="month-label" style="grid-column: 1;">Apr</div>
+                                        <div class="month-label" style="grid-column: 2;">May</div>
+                                        <div class="month-label" style="grid-column: 3;">Jun</div>
+                                        <div class="month-label" style="grid-column: 4;">Jul</div>
+                                        <div class="month-label" style="grid-column: 5;">Aug</div>
+                                        <div class="month-label" style="grid-column: 6;">Sep</div>
+                                        <div class="month-label" style="grid-column: 7;">Oct</div>
+                                    </div>
+                                </div>
+                                <div class="phase-header">Default phase</div>
+
+                                <!-- Timeline Data -->
+                                <template for:each={timelineData} for:item="item">
+                                    <div key={item.id} class="timeline-row">
+                                        <div class="col-info">
+                                            <div class="info-content" style="flex-direction: row; justify-content: space-between;">
+                                                <span class={item.textClass}><span class={item.dotClass}></span> {item.name}</span>
+                                                <span class="duration" style="font-size: 0.75rem;">about {item.durationStr}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-track">
+                                            <div class={item.pillClass} style={item.timelineStyle}>
+                                                <lightning-icon icon-name={item.icon} size="xx-small" class="gantt-icon-small" style={item.iconStyle}></lightning-icon>
+                                                {item.name}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </template>
+        </div>
+
+        <!-- Add Item Modal -->
+        <template if:true={isModalOpen}>
+            <c-cpq-add-item-modal
+                onclose={closeAddItemModal}
+                onadd={handleItemsAdded}
+            ></c-cpq-add-item-modal>
+        </template>
+    </div>
+</template>
