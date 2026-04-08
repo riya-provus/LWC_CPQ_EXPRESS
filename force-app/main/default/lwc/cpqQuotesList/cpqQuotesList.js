@@ -7,6 +7,8 @@ import createQuote from '@salesforce/apex/QuotesListController.createQuote';
 import deleteQuote from '@salesforce/apex/QuotesListController.deleteQuote';
 import cloneQuote from '@salesforce/apex/QuotesListController.cloneQuote';
 
+const LS_KEY = 'cpqQuotesListViewSettings';
+
 export default class CpqQuotesList extends LightningElement {
     @track quotes = [];
     @track errorMsg = '';
@@ -39,6 +41,8 @@ export default class CpqQuotesList extends LightningElement {
 
     // Wired results for refresh
     _wiredQuotesResult;
+    _wiredAccountsResult;
+    _wiredOpportunitiesResult;
 
     @track columns = [
         { id: 'hash', label: '#', visible: true, locked: true },
@@ -73,13 +77,15 @@ export default class CpqQuotesList extends LightningElement {
     }
 
     @wire(getAccounts)
-    wiredAccounts({ data }) {
-        if (data) this.accounts = data;
+    wiredAccounts(result) {
+        this._wiredAccountsResult = result;
+        if (result.data) this.accounts = result.data;
     }
 
     @wire(getOpportunities)
-    wiredOpportunities({ data }) {
-        if (data) this.opportunities = data;
+    wiredOpportunities(result) {
+        this._wiredOpportunitiesResult = result;
+        if (result.data) this.opportunities = result.data;
     }
 
     // ── Status Filter ──────────────────────────────────────────────────────────
@@ -122,11 +128,37 @@ export default class CpqQuotesList extends LightningElement {
 
     // ── View Settings ──────────────────────────────────────────────────────────
 
+    loadViewSettings() {
+        try {
+            const saved = window.localStorage.getItem(LS_KEY);
+            if (saved) {
+                const data = JSON.parse(saved);
+                if (data.density) this.density = data.density;
+                if (data.columns && Array.isArray(data.columns)) {
+                    this.columns = this.columns.map(col => {
+                        const savedCol = data.columns.find(c => c.id === col.id);
+                        if (savedCol && !col.locked) col.visible = savedCol.visible;
+                        return col;
+                    });
+                }
+            }
+        } catch(e) { console.error('Error loading view settings', e); }
+    }
+
+    saveViewSettings() {
+        try {
+            window.localStorage.setItem(LS_KEY, JSON.stringify({
+                density: this.density,
+                columns: this.columns.map(c => ({ id: c.id, visible: c.visible }))
+            }));
+        } catch(e) { console.error('Error saving view settings', e); }
+    }
+
     toggleViewDropdown() { this.isViewDropdownOpen = !this.isViewDropdownOpen; }
     get densityDefaultClass() { return this.density === 'Default' ? 'density-btn active' : 'density-btn'; }
     get densityCompactClass() { return this.density === 'Compact' ? 'density-btn active' : 'density-btn'; }
-    setDensityDefault() { this.density = 'Default'; }
-    setDensityCompact() { this.density = 'Compact'; }
+    setDensityDefault() { this.density = 'Default'; this.saveViewSettings(); }
+    setDensityCompact() { this.density = 'Compact'; this.saveViewSettings(); }
 
     handleColumnToggle(event) {
         const colId = event.target.dataset.id;
@@ -134,11 +166,12 @@ export default class CpqQuotesList extends LightningElement {
         const colIndex = this.columns.findIndex(c => c.id === colId);
         if (colIndex > -1 && !this.columns[colIndex].locked) {
             this.columns[colIndex].visible = checked;
+            this.saveViewSettings();
         }
     }
 
-    resetView() { this.density = 'Default'; this.columns.forEach(c => c.visible = true); }
-    selectAllColumns() { this.columns.forEach(c => c.visible = true); }
+    resetView() { this.density = 'Default'; this.columns.forEach(c => c.visible = true); this.saveViewSettings(); }
+    selectAllColumns() { this.columns.forEach(c => c.visible = true); this.saveViewSettings(); }
 
     get visibleColumnsCount() { return this.columns.filter(c => c.visible).length; }
     get tableDensityClass() { return this.density === 'Compact' ? 'quotes-table compact' : 'quotes-table'; }
@@ -211,12 +244,17 @@ export default class CpqQuotesList extends LightningElement {
     // ── New Quote Modal ────────────────────────────────────────────────────────
     
     connectedCallback() {
+        this.loadViewSettings();
         this.handleRefresh();
     }
 
     async handleRefresh() {
-        if (this._wiredQuotesResult) {
-            await refreshApex(this._wiredQuotesResult);
+        const promises = [];
+        if (this._wiredQuotesResult) promises.push(refreshApex(this._wiredQuotesResult));
+        if (this._wiredAccountsResult) promises.push(refreshApex(this._wiredAccountsResult));
+        if (this._wiredOpportunitiesResult) promises.push(refreshApex(this._wiredOpportunitiesResult));
+        if (promises.length > 0) {
+            await Promise.all(promises);
         }
     }
 
