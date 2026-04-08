@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>CPQ Fields Access</label>
+    <hasActivationRequired>false</hasActivationRequired>
+
+    <!-- CPQ Product Field Permissions -->
+    <fieldPermissions><editable>true</editable><field>CPQ_Product__c.Active__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Product__c.Billing_Unit__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Product__c.City__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Product__c.Cost__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Product__c.Country__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Product__c.Description__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Product__c.Location__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Product__c.Price__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>false</editable><field>CPQ_Product__c.Product_ID__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Product__c.State__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Product__c.Tags__c</field><readable>true</readable></fieldPermissions>
+
+    <!-- CPQ Add-on Field Permissions -->
+    <fieldPermissions><editable>true</editable><field>CPQ_Addon__c.Active__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Addon__c.Addon_ID__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Addon__c.Billing_Unit__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Addon__c.City__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Addon__c.Cost__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Addon__c.Country__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Addon__c.Description__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Addon__c.Location__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Addon__c.Price__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Addon__c.State__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Addon__c.Tags__c</field><readable>true</readable></fieldPermissions>
+
+    <!-- Existing Quote Field Permissions -->
+    <fieldPermissions><editable>true</editable><field>Quote.Margin_Percentage__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Quote.Total_Amount__c</field><readable>true</readable></fieldPermissions>
+
+    <!-- Object Permissions -->
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>CPQ_Product__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>CPQ_Addon__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+</PermissionSet>
