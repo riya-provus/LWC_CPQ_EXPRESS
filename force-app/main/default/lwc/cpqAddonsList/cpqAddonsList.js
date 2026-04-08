@@ -6,6 +6,8 @@ import createAddon from '@salesforce/apex/AddonListController.createAddon';
 import deleteAddon from '@salesforce/apex/AddonListController.deleteAddon';
 import toggleAddonActive from '@salesforce/apex/AddonListController.toggleAddonActive';
 
+const LS_KEY = 'cpqAddonsListViewSettings';
+
 export default class CpqAddonsList extends LightningElement {
     @track addons = [];
     @track filteredAddons = [];
@@ -39,6 +41,10 @@ export default class CpqAddonsList extends LightningElement {
     ];
 
     wiredAddonsResult;
+
+    connectedCallback() {
+        this.loadViewSettings();
+    }
 
     @wire(getAddons)
     wiredAddons(result) {
@@ -192,6 +198,32 @@ export default class CpqAddonsList extends LightningElement {
 
     // --- View Settings ---
 
+    loadViewSettings() {
+        try {
+            const saved = window.localStorage.getItem(LS_KEY);
+            if (saved) {
+                const data = JSON.parse(saved);
+                if (data.density) this.density = data.density;
+                if (data.columns && Array.isArray(data.columns)) {
+                    this.columns = this.columns.map(col => {
+                        const savedCol = data.columns.find(c => c.id === col.id);
+                        if (savedCol) col.visible = savedCol.visible;
+                        return col;
+                    });
+                }
+            }
+        } catch(e) {}
+    }
+
+    saveViewSettings() {
+        try {
+            window.localStorage.setItem(LS_KEY, JSON.stringify({
+                density: this.density,
+                columns: this.columns.map(c => ({ id: c.id, visible: c.visible }))
+            }));
+        } catch(e) {}
+    }
+
     toggleViewDropdown() {
         this.isViewDropdownOpen = !this.isViewDropdownOpen;
     }
@@ -201,14 +233,16 @@ export default class CpqAddonsList extends LightningElement {
         this.columns = this.columns.map(col => 
             col.id === colId ? { ...col, visible: event.target.checked } : col
         );
+        this.saveViewSettings();
     }
 
-    setDensityDefault() { this.density = 'default'; }
-    setDensityCompact() { this.density = 'compact'; }
+    setDensityDefault() { this.density = 'default'; this.saveViewSettings(); }
+    setDensityCompact() { this.density = 'compact'; this.saveViewSettings(); }
 
     resetViewSettings() {
         this.density = 'default';
         this.columns = this.columns.map(col => ({ ...col, visible: true }));
+        this.saveViewSettings();
     }
 
     // --- Utils ---

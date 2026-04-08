@@ -12,6 +12,7 @@ import deleteQuoteLineItem from '@salesforce/apex/QuoteExplorerController.delete
 import getSavedPDFs from '@salesforce/apex/QuoteExplorerController.getSavedPDFs';
 import savePDFToQuote from '@salesforce/apex/QuoteExplorerController.savePDFToQuote';
 import deleteQuoteDocument from '@salesforce/apex/QuoteExplorerController.deleteQuoteDocument';
+import getSelectionData from '@salesforce/apex/QuoteExplorerController.getSelectionData';
 
 export default class CpqQuoteExplorer extends LightningElement {
     @api quoteId;
@@ -22,13 +23,18 @@ export default class CpqQuoteExplorer extends LightningElement {
     @track lineItems = [];
     @track draftItems = [];
     @track savedPDFs = [];
-    @track activeTab = 'Summary';
+    @track activeTab = 'Margin Analyzer'; // Changed default to show it off
     @track isLoading = true;
     @track isModalOpen = false;
     @track isPreviewModalOpen = false;
     @track pdfUrl = '';
     @track isSubmitting = false;
     @track isProcessingAction = false;
+    @track whatIfDiscount = 0;
+    @track catalogItems = { products: [], addons: [], roles: [] };
+    @track catalogTab = 'Products';
+    @track catalogSearchStr = '';
+    @track isDraggingOver = false;
 
     // Chart Data (Mocking Phase data for now as researched)
     @track phaseBreakdown = [
@@ -41,6 +47,15 @@ export default class CpqQuoteExplorer extends LightningElement {
     _wiredItemsResult;
     _wiredHistoryResult;
     _wiredPDFsResult;
+
+    @wire(getSelectionData)
+    wiredCatalog(result) {
+        if (result.data) {
+            this.catalogItems.products = result.data.products ? result.data.products.map(p => ({ ...p, Type: 'Product', icon: 'utility:package' })) : [];
+            this.catalogItems.addons = result.data.addons ? result.data.addons.map(a => ({ ...a, Type: 'Add-on', icon: 'utility:ad_set' })) : [];
+            this.catalogItems.roles = result.data.resourceRoles ? result.data.resourceRoles.map(r => ({ ...r, Type: 'Labor', Price__c: r.Price__c || 0, Cost__c: 0, icon: 'utility:user' })) : [];
+        }
+    }
 
     @wire(getQuoteSummary, { quoteId: '$quoteId' })
     wiredSummary(result) {
@@ -135,7 +150,7 @@ export default class CpqQuoteExplorer extends LightningElement {
     }
 
     get isReadOnly() {
-        return this.summary && this.summary.status === 'Approved';
+        return this.summary && (this.summary.status === 'Approved' || this.summary.status === 'Rejected' || this.summary.status === 'In Review');
     }
 
     get showEditDescriptionIcon() {
@@ -556,7 +571,7 @@ export default class CpqQuoteExplorer extends LightningElement {
     }
 
     get tabs() {
-        const tabList = ['Summary', 'Line Items', 'Timeline', 'Generated PDFs'];
+        const tabList = ['Summary', 'Line Items', 'Timeline', 'Generated PDFs', 'Margin Analyzer'];
         return tabList.map(tab => ({
             name: tab,
             class: tab === this.activeTab ? 'tab-item active' : 'tab-item'
@@ -567,6 +582,147 @@ export default class CpqQuoteExplorer extends LightningElement {
     get isLineItemsActive() { return this.activeTab === 'Line Items'; }
     get isTimelineActive() { return this.activeTab === 'Timeline'; }
     get isGeneratedPDFsActive() { return this.activeTab === 'Generated PDFs'; }
+    get isMarginAnalyzerActive() { return this.activeTab === 'Margin Analyzer'; }
+
+    // Drag and Drop Catalog Logic
+    get catalogTabClassProducts() { return this.catalogTab === 'Products' ? 'active' : ''; }
+    get catalogTabClassAddons() { return this.catalogTab === 'Addons' ? 'active' : ''; }
+    get catalogTabClassRoles() { return this.catalogTab === 'Roles' ? 'active' : ''; }
+
+    setCatalogProducts() { this.catalogTab = 'Products'; }
+    setCatalogAddons() { this.catalogTab = 'Addons'; }
+    setCatalogRoles() { this.catalogTab = 'Roles'; }
+
+    handleCatalogSearch(e) {
+        this.catalogSearchStr = e.target.value.toLowerCase();
+    }
+
+    get filteredCatalogItems() {
+        let items = [];
+        if (this.catalogTab === 'Products') items = this.catalogItems.products;
+        else if (this.catalogTab === 'Addons') items = this.catalogItems.addons;
+        else if (this.catalogTab === 'Roles') items = this.catalogItems.roles;
+
+        if (this.catalogSearchStr) {
+            items = items.filter(i => i.Name && i.Name.toLowerCase().includes(this.catalogSearchStr));
+        }
+        return items;
+    }
+
+    handleDragStart(event) {
+        event.dataTransfer.setData('sourceId', event.currentTarget.dataset.id);
+        event.dataTransfer.setData('type', event.currentTarget.dataset.type);
+        event.dataTransfer.setData('name', event.currentTarget.dataset.name);
+        event.dataTransfer.setData('price', event.currentTarget.dataset.price);
+        event.dataTransfer.setData('cost', event.currentTarget.dataset.cost);
+    }
+
+    get dropZoneClass() {
+        return this.isDraggingOver ? 'drop-zone-container drag-over' : 'drop-zone-container';
+    }
+
+    handleDragOver(event) {
+        event.preventDefault();
+        this.isDraggingOver = true;
+    }
+
+    handleDragLeave() {
+        this.isDraggingOver = false;
+    }
+
+    handleDrop(event) {
+        event.preventDefault();
+        this.isDraggingOver = false;
+        
+        if (this.isReadOnly) {
+            this.dispatchEvent(new ShowToastEvent({ title: 'Read Only', message: 'Quote is approved. Cannot add items.', variant: 'warning' }));
+            return;
+        }
+
+        const id = event.dataTransfer.getData('sourceId');
+        const type = event.dataTransfer.getData('type');
+        const name = event.dataTransfer.getData('name');
+        const price = parseFloat(event.dataTransfer.getData('price')) || 0;
+        const cost = parseFloat(event.dataTransfer.getData('cost')) || 0;
+
+        if (!id) return;
+
+        const newItem = {
+            id: `new-${Date.now()}`,
+            isNew: true,
+            productId: id,
+            name: name,
+            family: type,
+            phase: 'Default phase',
+            startDate: new Date().toISOString().split('T')[0],
+            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            quantity: 1,
+            baseRate: price,
+            unitPrice: price,
+            unitCost: cost,
+            discount: 0,
+            totalValue: price
+        };
+
+        this.draftItems = [...this.draftItems, newItem];
+    }
+
+    // Margin Analyzer Logic
+    get whatIfSubtotal() {
+        return this.calculatedSubtotal;
+    }
+    
+    get whatIfTotal() {
+        return this.whatIfSubtotal * (1 - (this.whatIfDiscount / 100));
+    }
+
+    get analyzerGrossMarginAmount() {
+        const totalRev = this.whatIfTotal;
+        const totalCost = this.draftItems.reduce((acc, item) => acc + ((item.quantity || 0) * (item.unitCost || 0)), 0);
+        return totalRev - totalCost;
+    }
+
+    get analyzerGrossMarginPercent() {
+        const totalRev = this.whatIfTotal;
+        return totalRev > 0 ? (this.analyzerGrossMarginAmount / totalRev) * 100 : 0;
+    }
+
+    get analyzerNeedApproval() {
+        return this.analyzerGrossMarginPercent < 20;
+    }
+
+    get analyzerNeedApprovalClass() {
+        return this.analyzerNeedApproval ? 'metric-box bg-red danger' : 'metric-box bg-green safe';
+    }
+
+    handleWhatIfDiscountChange(event) {
+        this.whatIfDiscount = parseFloat(event.target.value) || 0;
+    }
+
+    applyAnalyzerDiscount() {
+        if (this.isReadOnly) {
+            this.dispatchEvent(new ShowToastEvent({ title: 'Read Only', message: 'Quote is approved. Cannot modify.', variant: 'warning' }));
+            return;
+        }
+
+        this.draftItems = this.draftItems.map(item => {
+            const newItem = { ...item };
+            newItem.discount = this.whatIfDiscount;
+            const q = parseFloat(newItem.quantity) || 0;
+            const p = parseFloat(newItem.unitPrice) || 0;
+            const d = parseFloat(newItem.discount) || 0;
+            newItem.totalValue = q * p * (1 - (d / 100));
+            return newItem;
+        });
+        
+        this.dispatchEvent(new ShowToastEvent({
+            title: 'Discounts Applied',
+            message: `A global ${this.whatIfDiscount}% discount was applied to all line items. Don't forget to Save.`,
+            variant: 'success'
+        }));
+        this.whatIfDiscount = 0;
+        this.activeTab = 'Line Items';
+    }
 
     // Calculated breakdowns
     get laborRevenue() { return this.formatCurrency(this.findCalculatedValue('Labor')); }

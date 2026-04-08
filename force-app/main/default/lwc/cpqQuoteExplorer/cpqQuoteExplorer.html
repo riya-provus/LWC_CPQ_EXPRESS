@@ -228,22 +228,55 @@
                     </div>
                 </template>
 
-                <!-- Line Items View -->
+                <!-- Drag & Drop Builder View -->
                 <template if:true={isLineItemsActive}>
-                    <div class="line-items-view">
-                        <div class="view-header slds-m-bottom_medium">
-                            <div class="view-actions">
-                                <button class="action-btn" title="Collapse All Phases">
-                                    <lightning-icon icon-name="utility:chevronright" size="xx-small" alternative-text="Collapse"></lightning-icon> 
-                                    Collapse All
-                                </button>
-                                <button if:false={isReadOnly} class="action-btn" title="Add New Project Phase">+ Add Phase</button>
-                                <button if:false={isReadOnly} class="primary-btn" onclick={openAddItemModal} title="Add Products or Roles">+ Add Item</button>
+                    <div class="dnd-split-view">
+                        <!-- Left Catalog Toolbar -->
+                        <div class="catalog-sidebar">
+                            <h3 class="catalog-title"><lightning-icon icon-name="utility:apps" size="small"></lightning-icon> Product Catalog</h3>
+                            <div class="search-box slds-m-bottom_small">
+                                <lightning-input type="search" placeholder="Search catalog..." variant="label-hidden" onchange={handleCatalogSearch}></lightning-input>
+                            </div>
+                            <div class="catalog-tabs">
+                                <button class={catalogTabClassProducts} onclick={setCatalogProducts}>Products</button>
+                                <button class={catalogTabClassAddons} onclick={setCatalogAddons}>Add-ons</button>
+                                <button class={catalogTabClassRoles} onclick={setCatalogRoles}>Roles</button>
+                            </div>
+                            <div class="catalog-items-container">
+                                <template for:each={filteredCatalogItems} for:item="catItem">
+                                    <div key={catItem.Id} class="catalog-item-card" draggable="true" ondragstart={handleDragStart} data-id={catItem.Id} data-type={catItem.Type} data-name={catItem.Name} data-price={catItem.Price__c} data-cost={catItem.Cost__c}>
+                                        <div class="cat-item-icon">
+                                            <lightning-icon icon-name={catItem.icon} size="small"></lightning-icon>
+                                        </div>
+                                        <div class="cat-item-details">
+                                            <div class="cat-item-name">{catItem.Name}</div>
+                                            <div class="cat-item-price"><lightning-formatted-number value={catItem.Price__c} format-style="currency"></lightning-formatted-number></div>
+                                        </div>
+                                        <div class="drag-handle"><lightning-icon icon-name="utility:drag_and_drop" size="x-small"></lightning-icon></div>
+                                    </div>
+                                </template>
                             </div>
                         </div>
 
-                        <div class="custom-table-container">
-                            <table class="line-items-table">
+                        <!-- Right Drop Zone -->
+                        <div class="line-items-wrapper">
+                            <div class="view-header slds-m-bottom_medium" style="display:flex; justify-content:space-between; align-items:center;">
+                                <h3 style="font-weight:700; font-size:1.25rem;">Quote Items</h3>
+                                <div class="view-actions" style="margin-bottom:0;">
+                                    <button class="action-btn" title="Collapse All Phases">
+                                        <lightning-icon icon-name="utility:chevronright" size="xx-small" alternative-text="Collapse"></lightning-icon> 
+                                        Collapse All
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class={dropZoneClass} ondrop={handleDrop} ondragover={handleDragOver} ondragleave={handleDragLeave}>
+                                <div if:true={isDraggingOver} class="drop-overlay">
+                                    <lightning-icon icon-name="utility:download" size="large" variant="inverse" style="--sds-c-icon-color-foreground: white;"></lightning-icon>
+                                    <p>Drop to add to Quote</p>
+                                </div>
+                                <div class="custom-table-container">
+                                    <table class="line-items-table">
                                 <thead>
                                     <tr>
                                         <th class="col-name">Name</th>
@@ -299,11 +332,14 @@
                                     <tr class="total-row">
                                         <td colspan="8">Total</td>
                                         <td>{formattedTotal}</td>
+                                        <td></td>
                                     </tr>
                                 </tfoot>
                             </table>
                         </div>
                     </div>
+                    </div>
+                </div>
                 </template>
 
                 <!-- Timeline View -->
@@ -404,6 +440,77 @@
                                 </div>
                             </template>
                         </div>
+                    </div>
+                </template>
+
+                <!-- Margin Analyzer View -->
+                <template if:true={isMarginAnalyzerActive}>
+                    <div class="analyzer-view" style="padding: 2rem;">
+                        <div class="view-header slds-m-bottom_large" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="font-size: 1.5rem; font-weight: 700; color: #111827;">"What-If" Margin & Discount Analyzer</h2>
+                        <p style="color: #6b7280; margin-top: 0.25rem;">Move the slider to simulate global discounts across your entire quote and see the live impact on your revenue margins before saving.</p>
+                    </div>
+                </div>
+
+                <div class="analyzer-grid">
+                    <!-- Left: Interactive Controls -->
+                    <div class="analyzer-controls-card">
+                        <h3 class="analyzer-card-title">Adjust Global Discount</h3>
+                        <div class="slider-container">
+                            <input type="range" min="0" max="100" value={whatIfDiscount} class="discount-slider" oninput={handleWhatIfDiscountChange} step="1">
+                            <div class="slider-value-display">{whatIfDiscount}% Discount</div>
+                        </div>
+
+                        <div class="analyzer-action-box">
+                            <template if:true={analyzerNeedApproval}>
+                                <div class="approval-warning">
+                                    <lightning-icon icon-name="utility:warning" size="small" variant="error"></lightning-icon>
+                                    <span><strong>VP Approval Required.</strong> The configured margin dropped below the 20% safe zone constraint.</span>
+                                </div>
+                            </template>
+                            <template if:false={analyzerNeedApproval}>
+                                <div class="approval-safe">
+                                    <lightning-icon icon-name="utility:success" size="small" variant="success"></lightning-icon>
+                                    <span><strong>Looks Good!</strong> Margin is safely above the 20% safe zone constraint.</span>
+                                </div>
+                            </template>
+
+                            <button class="primary-btn apply-btn" onclick={applyAnalyzerDiscount}>Apply {whatIfDiscount}% Discount to All Line Items &rarr;</button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Live Gauges -->
+                    <div class="analyzer-gauges-wrapper">
+                        <!-- Revenue Metric -->
+                        <div class="metric-box bg-blue">
+                            <div class="metric-title">Simulated Total Revenue</div>
+                            <div class="metric-val">
+                                <lightning-formatted-number value={whatIfTotal} format-style="currency" currency-code="USD" maximum-fraction-digits="2"></lightning-formatted-number>
+                            </div>
+                            <div class="metric-sub">
+                                Subtotal was: <lightning-formatted-number value={whatIfSubtotal} format-style="currency" currency-code="USD" maximum-fraction-digits="2"></lightning-formatted-number>
+                            </div>
+                        </div>
+
+                        <!-- Net Profit Metric -->
+                        <div class="metric-box bg-teal">
+                            <div class="metric-title">Simulated Net Profit</div>
+                            <div class="metric-val">
+                                <lightning-formatted-number value={analyzerGrossMarginAmount} format-style="currency" currency-code="USD" maximum-fraction-digits="2"></lightning-formatted-number>
+                            </div>
+                        </div>
+
+                        <!-- Margin Gauge -->
+                        <div class={analyzerNeedApprovalClass}>
+                            <div class="metric-title">Profit Margin</div>
+                            <div class="gauge-circle-val">
+                                <lightning-formatted-number value={analyzerGrossMarginPercent} maximum-fraction-digits="1"></lightning-formatted-number>%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                     </div>
                 </template>
             </template>

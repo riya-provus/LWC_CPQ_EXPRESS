@@ -2,6 +2,7 @@ import { LightningElement, wire, track } from 'lwc';
 import getDashboardData from '@salesforce/apex/CPQDashboardController.getDashboardData';
 import getQuotesByStatus from '@salesforce/apex/CPQDashboardController.getQuotesByStatus';
 import { NavigationMixin } from 'lightning/navigation';
+import { refreshApex } from '@salesforce/apex';
 
 export default class CpqDashboard extends NavigationMixin(LightningElement) {
     @track dashboardData = {};
@@ -96,19 +97,31 @@ export default class CpqDashboard extends NavigationMixin(LightningElement) {
         }));
     }
 
+    _wiredDataResult;
+    _wiredQuotesResult;
+
     @wire(getDashboardData)
-    wiredData({ error, data }) {
-        if (data && Object.keys(data).length > 0) {
-            this.dashboardData = data;
-            this.userName = data.userName;
+    wiredData(result) {
+        this._wiredDataResult = result;
+        if (result.data && Object.keys(result.data).length > 0) {
+            this.dashboardData = result.data;
+            this.userName = result.data.userName;
         }
     }
 
     @wire(getQuotesByStatus, { status: '$activeTab' })
-    wiredQuotes({ error, data }) {
-        if (data) {
-            this.quotes = data;
+    wiredQuotes(result) {
+        this._wiredQuotesResult = result;
+        if (result.data) {
+            this.quotes = result.data;
         }
+    }
+
+    async handleRefresh() {
+        const promises = [];
+        if (this._wiredDataResult) promises.push(refreshApex(this._wiredDataResult));
+        if (this._wiredQuotesResult) promises.push(refreshApex(this._wiredQuotesResult));
+        if (promises.length > 0) await Promise.all(promises);
     }
 
     get processedQuotes() {

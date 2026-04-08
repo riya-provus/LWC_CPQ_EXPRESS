@@ -30,6 +30,7 @@ export default class CpqAccountsList extends NavigationMixin(LightningElement) {
     @track isLoading = false;
 
     _wiredAccountsResult;
+    _wiredFiltersResult;
 
     @wire(getAccountsDetailed)
     wiredAccounts(result) {
@@ -42,12 +43,13 @@ export default class CpqAccountsList extends NavigationMixin(LightningElement) {
     }
 
     @wire(getAccountFilters)
-    wiredFilters({ data, error }) {
-        if (data) {
-            this.typeOptions = data.Type || [];
-            this.industryOptions = data.Industry || [];
-        } else if (error) {
-            console.error(error);
+    wiredFilters(result) {
+        this._wiredFiltersResult = result;
+        if (result.data) {
+            this.typeOptions = result.data.Type || [];
+            this.industryOptions = result.data.Industry || [];
+        } else if (result.error) {
+            console.error(result.error);
         }
     }
 
@@ -161,8 +163,10 @@ export default class CpqAccountsList extends NavigationMixin(LightningElement) {
 
     refreshData() {
         this.isLoading = true;
-        refreshApex(this._wiredAccountsResult)
-            .finally(() => { this.isLoading = false; });
+        const promises = [];
+        if (this._wiredAccountsResult) promises.push(refreshApex(this._wiredAccountsResult));
+        if (this._wiredFiltersResult) promises.push(refreshApex(this._wiredFiltersResult));
+        Promise.all(promises).finally(() => { this.isLoading = false; });
     }
 
     handleDelete(event) {

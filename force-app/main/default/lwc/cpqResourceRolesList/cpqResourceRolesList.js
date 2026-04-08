@@ -6,6 +6,8 @@ import deleteResourceRole from '@salesforce/apex/ResourceRoleController.deleteRe
 import toggleResourceRoleActive from '@salesforce/apex/ResourceRoleController.toggleResourceRoleActive';
 import createResourceRole from '@salesforce/apex/ResourceRoleController.createResourceRole';
 
+const LS_KEY = 'cpqResourceRolesListViewSettings';
+
 export default class CpqResourceRolesList extends LightningElement {
     @track roles = [];
     @track searchTerm = '';
@@ -42,6 +44,10 @@ export default class CpqResourceRolesList extends LightningElement {
     ];
 
     _wiredRolesResult;
+
+    connectedCallback() {
+        this.loadViewSettings();
+    }
 
     @wire(getResourceRoles)
     wiredRoles(result) {
@@ -187,21 +193,49 @@ export default class CpqResourceRolesList extends LightningElement {
 
     // ── Table Settings Handlers ──────────────────────────────────────────────
 
+    loadViewSettings() {
+        try {
+            const saved = window.localStorage.getItem(LS_KEY);
+            if (saved) {
+                const data = JSON.parse(saved);
+                if (data.isCompactView !== undefined) this.isCompactView = data.isCompactView;
+                if (data.columns && Array.isArray(data.columns)) {
+                    this.columns = this.columns.map(col => {
+                        const savedCol = data.columns.find(c => c.id === col.id);
+                        if (savedCol && !col.locked) col.visible = savedCol.visible;
+                        return col;
+                    });
+                }
+            }
+        } catch(e) {}
+    }
+
+    saveViewSettings() {
+        try {
+            window.localStorage.setItem(LS_KEY, JSON.stringify({
+                isCompactView: this.isCompactView,
+                columns: this.columns.map(c => ({ id: c.id, visible: c.visible }))
+            }));
+        } catch(e) {}
+    }
+
     toggleViewDropdown() { this.isViewDropdownOpen = !this.isViewDropdownOpen; }
-    setDensityDefault() { this.isCompactView = false; }
-    setDensityCompact() { this.isCompactView = true; }
+    setDensityDefault() { this.isCompactView = false; this.saveViewSettings(); }
+    setDensityCompact() { this.isCompactView = true; this.saveViewSettings(); }
 
     handleColumnToggle(event) {
         const colId = event.target.dataset.id;
         this.columns = this.columns.map(col => {
-            if (col.id === colId) return { ...col, visible: event.target.checked };
+            if (col.id === colId && !col.locked) return { ...col, visible: event.target.checked };
             return col;
         });
+        this.saveViewSettings();
     }
 
     resetView() {
         this.isCompactView = false;
         this.columns = this.columns.map(col => ({ ...col, visible: true }));
+        this.saveViewSettings();
     }
 
     // ── Other Handlers ───────────────────────────────────────────────────────
