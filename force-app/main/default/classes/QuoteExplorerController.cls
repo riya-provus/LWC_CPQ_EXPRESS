@@ -165,6 +165,69 @@ public with sharing class QuoteExplorerController {
     }
 
     @AuraEnabled
+    public static String savePDFToQuote(Id quoteId) {
+        try {
+            PageReference pdfPage = Page.QuoteDocument;
+            pdfPage.getParameters().put('id', String.valueOf(quoteId));
+            Blob pdfBlob;
+            if (Test.isRunningTest()) {
+                pdfBlob = Blob.valueOf('Test');
+            } else {
+                pdfBlob = pdfPage.getContentAsPDF();
+            }
+            
+            Quote q = [SELECT QuoteNumber FROM Quote WHERE Id = :quoteId LIMIT 1];
+            String fName = 'Quote_' + q.QuoteNumber + '_' + Datetime.now().format('yyyy-MM-dd') + '.pdf';
+
+            ContentVersion cv = new ContentVersion();
+            cv.Title = fName;
+            cv.PathOnClient = fName;
+            cv.VersionData = pdfBlob;
+            cv.IsMajorVersion = true;
+            insert cv;
+            
+            Id conDocId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cv.Id LIMIT 1].ContentDocumentId;
+            ContentDocumentLink cdl = new ContentDocumentLink();
+            cdl.LinkedEntityId = quoteId;
+            cdl.ContentDocumentId = conDocId;
+            cdl.ShareType = 'V';
+            // cdl.Visibility = 'AllUsers'; // Removed as it causes FIELD_INTEGRITY_EXCEPTION in orgs without communities
+            insert cdl;
+            
+            return 'Success';
+        } catch (Exception e) {
+            throw new AuraHandledException('Error saving PDF: ' + e.getMessage() + '\n' + e.getStackTraceString());
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, String>> getSavedPDFs(Id quoteId) {
+        List<Map<String, String>> results = new List<Map<String, String>>();
+        for (ContentDocumentLink cdl : [SELECT ContentDocumentId, ContentDocument.Title, ContentDocument.CreatedDate 
+                                         FROM ContentDocumentLink 
+                                         WHERE LinkedEntityId = :quoteId AND ContentDocument.FileType = 'PDF'
+                                         ORDER BY ContentDocument.CreatedDate DESC]) {
+            Map<String, String> pdf = new Map<String, String>();
+            pdf.put('id', cdl.ContentDocumentId);
+            pdf.put('title', cdl.ContentDocument.Title);
+            pdf.put('createdDate', cdl.ContentDocument.CreatedDate.format());
+            // construct the download URL standard to lightning
+            pdf.put('downloadUrl', '/sfc/servlet.shepherd/document/download/' + cdl.ContentDocumentId);
+            results.add(pdf);
+        }
+        return results;
+    }
+
+    @AuraEnabled
+    public static void deleteQuoteDocument(Id documentId) {
+        try {
+            delete new ContentDocument(Id = documentId);
+        } catch (Exception e) {
+            throw new AuraHandledException('Error deleting document: ' + e.getMessage());
+        }
+    }
+
+    @AuraEnabled
     public static void deleteQuoteLineItem(Id itemId) {
         try {
             Quote_Item__c item = [SELECT Id, Quote__c FROM Quote_Item__c WHERE Id = :itemId LIMIT 1];
