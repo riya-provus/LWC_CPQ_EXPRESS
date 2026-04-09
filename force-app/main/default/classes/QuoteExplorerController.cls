@@ -85,7 +85,7 @@ public with sharing class QuoteExplorerController {
         
         List<Quote_Item__c> items = [SELECT Id, Item_Name__c, Item_Type__c, 
                                             Phase__c, Start_Date__c, End_Date__c, 
-                                            Quantity__c, UnitPrice__c, 
+                                            Quantity__c, UnitPrice__c, BaseRate__c,
                                             Discount__c, Total_Price__c,
                                             CPQ_Product__r.Cost__c, CPQ_Addon__r.Cost__c 
                                      FROM Quote_Item__c 
@@ -245,7 +245,8 @@ public with sharing class QuoteExplorerController {
     }
 
     private static void syncQuoteRollups(Id quoteId) {
-        List<Quote_Item__c> allItems = [SELECT Quantity__c, UnitPrice__c, Total_Price__c, 
+        List<Quote_Item__c> allItems = [SELECT Id, Quantity__c, UnitPrice__c, Total_Price__c, 
+                                               BaseRate__c,
                                                CPQ_Product__r.Cost__c, CPQ_Addon__r.Cost__c 
                                         FROM Quote_Item__c 
                                         WHERE Quote__c = :quoteId];
@@ -259,12 +260,9 @@ public with sharing class QuoteExplorerController {
             Decimal price = item.UnitPrice__c != null ? item.UnitPrice__c : 0;
             Decimal total = item.Total_Price__c != null ? item.Total_Price__c : 0;
             
-            Decimal cost = 0;
-            if(item.CPQ_Product__r != null && item.CPQ_Product__r.Cost__c != null) {
-                cost = item.CPQ_Product__r.Cost__c;
-            } else if(item.CPQ_Addon__r != null && item.CPQ_Addon__r.Cost__c != null) {
-                cost = item.CPQ_Addon__r.Cost__c;
-            }
+            // Per users new formula: Margin = Net Price - Base Rate
+            // Thus, we treat BaseRate__c as the "Cost" anchor for this project
+            Decimal cost = item.BaseRate__c != null ? item.BaseRate__c : 0;
             
             subtotal += (q * price);
             totalAmount += total;
@@ -349,6 +347,7 @@ public with sharing class QuoteExplorerController {
             this.quantity = qli.Quantity__c;
             this.baseRate = qli.UnitPrice__c;
             this.unitPrice = qli.UnitPrice__c;
+            this.baseRate = qli.BaseRate__c != null ? qli.BaseRate__c : qli.UnitPrice__c;
             
             Decimal cost = 0;
             if (qli.CPQ_Product__c != null) cost = qli.CPQ_Product__r.Cost__c;

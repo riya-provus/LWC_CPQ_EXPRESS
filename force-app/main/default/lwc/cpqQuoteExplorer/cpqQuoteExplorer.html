@@ -289,7 +289,9 @@
                                             <td class="cell-qty">
                                                 <lightning-input type="number" value={item.quantity} data-id={item.id} data-field="quantity" onchange={handleInputChange} variant="label-hidden" disabled={isReadOnly}></lightning-input>
                                             </td>
-                                            <td class="cell-rate">${item.baseRate}</td>
+                                            <td class="cell-rate">
+                                                <lightning-input type="number" value={item.baseRate} data-id={item.id} data-field="baseRate" onchange={handleInputChange} variant="label-hidden" formatter="currency" disabled={isReadOnly}></lightning-input>
+                                            </td>
                                             <td class="cell-price">
                                                 <lightning-input type="number" value={item.unitPrice} data-id={item.id} data-field="unitPrice" onchange={handleInputChange} variant="label-hidden" formatter="currency" disabled={isReadOnly}></lightning-input>
                                             </td>

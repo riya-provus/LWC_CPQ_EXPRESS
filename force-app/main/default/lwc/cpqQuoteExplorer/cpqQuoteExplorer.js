@@ -397,15 +397,11 @@ export default class CpqQuoteExplorer extends LightningElement {
             if (item.id === id) {
                 const updatedItem = { ...item, [field]: value };
                 
-                if (field === 'quantity' || field === 'unitPrice' || field === 'discount') {
+                if (field === 'quantity' || field === 'unitPrice' || field === 'discount' || field === 'baseRate') {
                     const q = parseFloat(updatedItem.quantity) || 0;
                     const p = parseFloat(updatedItem.unitPrice) || 0;
                     const d = parseFloat(updatedItem.discount) || 0;
                     updatedItem.totalValue = q * p * (1 - (d / 100));
-                    
-                    if (field === 'unitPrice') {
-                        updatedItem.baseRate = p; // Base rate stays synced with unit price if user modifies unit price
-                    }
                 }
                 return updatedItem;
             }
@@ -422,6 +418,7 @@ export default class CpqQuoteExplorer extends LightningElement {
                     Quote__c: this.quoteId,
                     Quantity__c: parseFloat(item.quantity) || 0,
                     UnitPrice__c: parseFloat(item.unitPrice) || 0,
+                    BaseRate__c: parseFloat(item.baseRate) || 0,
                     Discount__c: parseFloat(item.discount) || 0,
                     Phase__c: item.phase,
                     Start_Date__c: item.startDate,
@@ -579,7 +576,7 @@ export default class CpqQuoteExplorer extends LightningElement {
     get calculatedMargin() {
         const totalRev = this.calculatedTotal;
         const totalCost = this.draftItems.reduce((acc, item) => {
-            return acc + ((item.quantity || 0) * (item.unitCost || 0));
+            return acc + ((item.quantity || 0) * (item.baseRate || 0));
         }, 0);
         
         const marginAmt = totalRev - totalCost;
@@ -731,7 +728,7 @@ export default class CpqQuoteExplorer extends LightningElement {
 
     get analyzerGrossMarginAmount() {
         const totalRev = this.whatIfTotal;
-        const totalCost = this.draftItems.reduce((acc, item) => acc + ((item.quantity || 0) * (item.unitCost || 0)), 0);
+        const totalCost = this.draftItems.reduce((acc, item) => acc + ((item.quantity || 0) * (item.baseRate || 0)), 0);
         return totalRev - totalCost;
     }
 
