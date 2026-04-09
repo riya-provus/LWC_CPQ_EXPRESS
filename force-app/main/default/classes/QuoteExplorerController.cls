@@ -26,6 +26,10 @@ public with sharing class QuoteExplorerController {
         summary.createdDate = q.CreatedDate;
         summary.expirationDate = q.ExpirationDate;
         
+        // Fetch current user's CPQ Role
+        User curr = [SELECT CPQ_Role__c FROM User WHERE Id = :UserInfo.getUserId() LIMIT 1];
+        summary.currentUserRole = curr.CPQ_Role__c != null ? curr.CPQ_Role__c : 'User';
+        
         return summary;
     }
 
@@ -300,6 +304,7 @@ public with sharing class QuoteExplorerController {
         @AuraEnabled public Decimal margin;
         @AuraEnabled public DateTime createdDate;
         @AuraEnabled public Date expirationDate;
+        @AuraEnabled public String currentUserRole;
     }
 
     public class BreakdownItem {

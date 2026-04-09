@@ -6,6 +6,8 @@ import getAccountsDetailed from '@salesforce/apex/AccountListController.getAccou
 import getAccountFilters from '@salesforce/apex/AccountListController.getAccountFilters';
 import deleteAccount from '@salesforce/apex/AccountListController.deleteAccount';
 import createAccount from '@salesforce/apex/AccountListController.createAccount';
+import updateAccount from '@salesforce/apex/AccountListController.updateAccount';
+import getCurrentUserRole from '@salesforce/apex/CPQAdminController.getCurrentUserRole';
 
 export default class CpqAccountsList extends NavigationMixin(LightningElement) {
     @track accounts = [];
@@ -28,6 +30,15 @@ export default class CpqAccountsList extends NavigationMixin(LightningElement) {
     @track isTypeDropdownOpen = false;
     @track isIndustryDropdownOpen = false;
     @track isLoading = false;
+    @track userRole = 'User';
+    @track isEditMode = false;
+    @track currentAccountId = null;
+    isListenerAdded = false;
+
+    @wire(getCurrentUserRole)
+    wiredRole({data}) { if (data) this.userRole = data; }
+
+    get isAdmin() { return this.userRole === 'Admin'; }
 
     _wiredAccountsResult;
     _wiredFiltersResult;
@@ -89,14 +100,52 @@ export default class CpqAccountsList extends NavigationMixin(LightningElement) {
     get startIndex() { return this.totalCount > 0 ? 1 : 0; }
     get endIndex() { return this.totalCount; }
 
+    get modalTitle() { return this.isEditMode ? 'Edit Account' : 'Create New Account'; }
+    get saveBtnLabel() { return this.isEditMode ? (this.isLoading ? 'Updating...' : 'Update') : (this.isLoading ? 'Creating...' : 'Create'); }
+
     // ── Handlers ───────────────────────────────────────────────────────────────
 
     handleSearch(event) {
         this.searchTerm = event.target.value;
     }
 
-    toggleTypeDropdown() { this.isTypeDropdownOpen = !this.isTypeDropdownOpen; this.isIndustryDropdownOpen = false; }
-    toggleIndustryDropdown() { this.isIndustryDropdownOpen = !this.isIndustryDropdownOpen; this.isTypeDropdownOpen = false; }
+    toggleTypeDropdown(event) { 
+        event.stopPropagation();
+        this.isTypeDropdownOpen = !this.isTypeDropdownOpen; 
+        this.isIndustryDropdownOpen = false; 
+    }
+    toggleIndustryDropdown(event) { 
+        event.stopPropagation();
+        this.isIndustryDropdownOpen = !this.isIndustryDropdownOpen; 
+        this.isTypeDropdownOpen = false; 
+    }
+
+    renderedCallback() {
+        if (!this.isListenerAdded) {
+            this.clickListener = (event) => {
+                const typeDropdown = this.template.querySelector('.type-dropdown-container');
+                const industryDropdown = this.template.querySelector('.industry-dropdown-container');
+                
+                const isClickInsideType = typeDropdown && typeDropdown.contains(event.target);
+                const isClickInsideIndustry = industryDropdown && industryDropdown.contains(event.target);
+
+                if (!isClickInsideType) this.isTypeDropdownOpen = false;
+                if (!isClickInsideIndustry) this.isIndustryDropdownOpen = false;
+            };
+            document.addEventListener('click', this.clickListener);
+            this.isListenerAdded = true;
+        }
+    }
+
+    disconnectedCallback() {
+        if (this.clickListener) {
+            document.removeEventListener('click', this.clickListener);
+        }
+    }
+
+    stopProp(event) {
+        event.stopPropagation();
+    }
 
     handleTypeSelect(event) {
         this.selectedType = event.currentTarget.dataset.value;
@@ -109,8 +158,28 @@ export default class CpqAccountsList extends NavigationMixin(LightningElement) {
     }
 
     handleNewAccount() {
+        this.isEditMode = false;
+        this.currentAccountId = null;
         this.newAccount = { Name: '', Type: 'None', Industry: 'None', Phone: '', Website: '' };
         this.showNewAccountModal = true;
+    }
+
+    handleEditAccount(event) {
+        event.preventDefault();
+        const accId = event.currentTarget.dataset.id;
+        const acc = this.accounts.find(a => a.Id === accId);
+        if (acc) {
+            this.isEditMode = true;
+            this.currentAccountId = accId;
+            this.newAccount = {
+                Name: acc.Name,
+                Type: acc.Type || 'None',
+                Industry: acc.Industry || 'None',
+                Phone: acc.Phone || '',
+                Website: acc.Website || ''
+            };
+            this.showNewAccountModal = true;
+        }
     }
 
     closeModal() {
@@ -133,17 +202,30 @@ export default class CpqAccountsList extends NavigationMixin(LightningElement) {
         }
 
         this.isLoading = true;
-        createAccount({ 
-            name: this.newAccount.Name,
-            type: this.newAccount.Type,
-            industry: this.newAccount.Industry,
-            phone: this.newAccount.Phone,
-            website: this.newAccount.Website
-        })
+
+        const saveAction = this.isEditMode ? 
+            updateAccount({
+                accountId: this.currentAccountId,
+                name: this.newAccount.Name,
+                type: this.newAccount.Type,
+                industry: this.newAccount.Industry,
+                phone: this.newAccount.Phone,
+                website: this.newAccount.Website
+            }) :
+            createAccount({ 
+                name: this.newAccount.Name,
+                type: this.newAccount.Type,
+                industry: this.newAccount.Industry,
+                phone: this.newAccount.Phone,
+                website: this.newAccount.Website
+            });
+
+        saveAction
             .then(() => {
+                const msg = this.isEditMode ? 'Account updated successfully' : 'Account created successfully';
                 this.dispatchEvent(new ShowToastEvent({
                     title: 'Success',
-                    message: 'Account created successfully',
+                    message: msg,
                     variant: 'success'
                 }));
                 this.showNewAccountModal = false;
@@ -159,6 +241,14 @@ export default class CpqAccountsList extends NavigationMixin(LightningElement) {
             .finally(() => {
                 this.isLoading = false;
             });
+    }
+
+    handleAIAssistant() {
+        this.dispatchEvent(new ShowToastEvent({
+            title: 'Feature Coming Soon',
+            message: 'Our Einstein-powered AI assistant is currently being finalized. Stay tuned for intelligent account insights!',
+            variant: 'info'
+        }));
     }
 
     refreshData() {

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>PDF_Decimal_Places__c</fullName>
+    <label>Decimal Places</label>
+    <type>Number</type>
+    <precision>2</precision>
+    <scale>0</scale>
+    <defaultValue>2</defaultValue>
+</CustomField>

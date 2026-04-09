@@ -38,6 +38,7 @@ export default class CpqQuotesList extends LightningElement {
     @track charCount = 0;
     @track isOppDropdownOpen = false;
     @track isModalAccountDropdownOpen = false;
+    isListenerAdded = false;
 
     // Wired results for refresh
     _wiredQuotesResult;
@@ -90,7 +91,77 @@ export default class CpqQuotesList extends LightningElement {
 
     // ── Status Filter ──────────────────────────────────────────────────────────
 
-    toggleStatusDropdown() { this.isStatusDropdownOpen = !this.isStatusDropdownOpen; }
+    // ── Interaction Handlers ───────────────────────────────────────────────────
+    
+    toggleStatusDropdown(event) { 
+        if (event) event.stopPropagation();
+        this.isStatusDropdownOpen = !this.isStatusDropdownOpen; 
+        this.closeOtherDropdowns('status');
+    }
+
+    toggleAccountDropdown(event) { 
+        if (event) event.stopPropagation();
+        this.isAccountDropdownOpen = !this.isAccountDropdownOpen; 
+        this.closeOtherDropdowns('account');
+    }
+
+    toggleViewDropdown(event) { 
+        if (event) event.stopPropagation();
+        this.isViewDropdownOpen = !this.isViewDropdownOpen; 
+        this.closeOtherDropdowns('view');
+    }
+
+    toggleOppDropdown(event) { 
+        if (event) event.stopPropagation();
+        this.isOppDropdownOpen = !this.isOppDropdownOpen; 
+        this.closeOtherDropdowns('opp');
+    }
+
+    toggleModalAccountDropdown(event) { 
+        if (event) event.stopPropagation();
+        this.isModalAccountDropdownOpen = !this.isModalAccountDropdownOpen; 
+        this.closeOtherDropdowns('modalAccount');
+    }
+
+    closeOtherDropdowns(exclude) {
+        if (exclude !== 'status') this.isStatusDropdownOpen = false;
+        if (exclude !== 'account') this.isAccountDropdownOpen = false;
+        if (exclude !== 'view') this.isViewDropdownOpen = false;
+        if (exclude !== 'opp') this.isOppDropdownOpen = false;
+        if (exclude !== 'modalAccount') this.isModalAccountDropdownOpen = false;
+    }
+
+    renderedCallback() {
+        if (!this.isListenerAdded) {
+            this.clickListener = (event) => {
+                const statusCont = this.template.querySelector('.status-filter-container');
+                const accountCont = this.template.querySelector('.account-filter-container');
+                const viewCont = this.template.querySelector('.view-settings-container');
+                const oppCont = this.template.querySelector('.modal-opp-container');
+                const modalAccCont = this.template.querySelector('.modal-acc-container');
+                
+                const isStatus = statusCont && statusCont.contains(event.target);
+                const isAccount = accountCont && accountCont.contains(event.target);
+                const isView = viewCont && viewCont.contains(event.target);
+                const isOpp = oppCont && oppCont.contains(event.target);
+                const isModalAcc = modalAccCont && modalAccCont.contains(event.target);
+
+                if (!isStatus) this.isStatusDropdownOpen = false;
+                if (!isAccount) this.isAccountDropdownOpen = false;
+                if (!isView) this.isViewDropdownOpen = false;
+                if (!isOpp) this.isOppDropdownOpen = false;
+                if (!isModalAcc) this.isModalAccountDropdownOpen = false;
+            };
+            document.addEventListener('click', this.clickListener);
+            this.isListenerAdded = true;
+        }
+    }
+
+    disconnectedCallback() {
+        if (this.clickListener) {
+            document.removeEventListener('click', this.clickListener);
+        }
+    }
 
     handleStatusSelect(event) {
         this.selectedStatus = event.currentTarget.dataset.value;
@@ -106,7 +177,8 @@ export default class CpqQuotesList extends LightningElement {
 
     // ── Account Filter ─────────────────────────────────────────────────────────
 
-    toggleAccountDropdown() { this.isAccountDropdownOpen = !this.isAccountDropdownOpen; }
+    get accountDropdownLabel() { return this.selectedAccountName; }
+    get isAccountAll() { return !this.selectedAccountId; }
 
     handleAccountSelect(event) {
         this.selectedAccountId = event.currentTarget.dataset.id;
@@ -154,7 +226,8 @@ export default class CpqQuotesList extends LightningElement {
         } catch(e) { console.error('Error saving view settings', e); }
     }
 
-    toggleViewDropdown() { this.isViewDropdownOpen = !this.isViewDropdownOpen; }
+    // ── View Settings ──────────────────────────────────────────────────────────
+
     get densityDefaultClass() { return this.density === 'Default' ? 'density-btn active' : 'density-btn'; }
     get densityCompactClass() { return this.density === 'Compact' ? 'density-btn active' : 'density-btn'; }
     setDensityDefault() { this.density = 'Default'; this.saveViewSettings(); }
@@ -207,8 +280,8 @@ export default class CpqQuotesList extends LightningElement {
         // Account filter
         if (this.selectedAccountId) {
             filtered = filtered.filter(q => {
-                const accId = q.AccountId || (q.Opportunity && q.Opportunity.AccountId);
-                return accId === this.selectedAccountId;
+                return (q.AccountId === this.selectedAccountId) || 
+                       (q.Opportunity && q.Opportunity.AccountId === this.selectedAccountId);
             });
         }
 
@@ -304,7 +377,7 @@ export default class CpqQuotesList extends LightningElement {
     }
 
     // Modal Opportunity dropdown
-    toggleOppDropdown() { this.isOppDropdownOpen = !this.isOppDropdownOpen; }
+
 
     // Filter opportunities by the selected account (in modal)
     get filteredOpportunities() {
@@ -334,7 +407,7 @@ export default class CpqQuotesList extends LightningElement {
     }
 
     // Modal Account dropdown
-    toggleModalAccountDropdown() { this.isModalAccountDropdownOpen = !this.isModalAccountDropdownOpen; }
+
 
     get selectedModalAccountLabel() {
         if (!this.newQuote.accountId) return 'Select an account...';

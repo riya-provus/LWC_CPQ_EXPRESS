@@ -10,14 +10,12 @@
                     <li class={resourceRolesClass} data-target="ResourceRoles" onclick={handleSidebarNav}><lightning-icon icon-name="standard:user" size="small" class={resourceRolesIconClass}></lightning-icon> Resource Roles</li>
                     <li class={productsClass} data-target="Products" onclick={handleSidebarNav}><lightning-icon icon-name="standard:product" size="small" class={productsIconClass}></lightning-icon> Products</li>
                     <li class={addonsClass} data-target="Addons" onclick={handleSidebarNav}><lightning-icon icon-name="standard:apps" size="small" class={addonsIconClass}></lightning-icon> Add-ons</li>
-                    <li><lightning-icon icon-name="utility:einstein" size="small" class="sidebar-icon"></lightning-icon> AI Assistant</li>
+                    <li onclick={handleAIAssistant}><lightning-icon icon-name="utility:einstein" size="small" class="sidebar-icon"></lightning-icon> AI Assistant</li>
                 </ul>
             </div>
             <div class="sidebar-footer">
                 <ul>
-                    <li><lightning-icon icon-name="utility:smile" size="small" class="sidebar-icon"></lightning-icon> Feedback</li>
-                    <li><lightning-icon icon-name="utility:setup_assistant_guide" size="small" class="sidebar-icon"></lightning-icon> Take a Tour</li>
-                    <li><lightning-icon icon-name="utility:settings" size="small" class="sidebar-icon"></lightning-icon> Settings</li>
+                    <li class={settingsClass} data-target="Settings" onclick={handleSidebarNav}><lightning-icon icon-name="utility:settings" size="small" class={settingsIconClass}></lightning-icon> Settings</li>
                 </ul>
             </div>
         </div>
@@ -37,7 +35,7 @@
                 </div>
                 <div class="header-right">
                     <button class="header-pill" onclick={handleRefresh}><lightning-icon icon-name="utility:refresh" size="xx-small"></lightning-icon> Refresh</button>
-                    <button class="header-pill"><lightning-icon icon-name="utility:einstein" size="xx-small"></lightning-icon> AI Assistant</button>
+                    <button class="header-pill" onclick={handleAIAssistant}><lightning-icon icon-name="utility:einstein" size="xx-small"></lightning-icon> AI Assistant</button>
                 </div>
             </div>
 
@@ -57,17 +55,17 @@
                                 <lightning-icon icon-name="utility:einstein" size="small" variant="inverse"></lightning-icon>
                             </div>
                             <input type="text" class="ai-input-field" placeholder="Ask AI anything about your quotes, resources, products..." />
-                            <button class="ai-action-btn">Ask AI &rarr;</button>
+                            <button class="ai-action-btn" onclick={handleAIAssistant}>Ask AI &rarr;</button>
                         </div>
                         <div class="ai-chips-row">
                             <span class="chips-label">💡 Try:</span>
                             <div class="chips-container-scroll">
-                                <button class="chip">Help me create quote</button>
-                                <button class="chip">Clone an existing quote</button>
-                                <button class="chip">Show all quotes</button>
-                                <button class="chip">List accounts</button>
-                                <button class="chip">Show all resource roles</button>
-                                <button class="chip">Quotes pending a</button>
+                                <button class="chip" onclick={handleAIAssistant}>Help me create quote</button>
+                                <button class="chip" onclick={handleAIAssistant}>Clone an existing quote</button>
+                                <button class="chip" onclick={handleAIAssistant}>Show all quotes</button>
+                                <button class="chip" onclick={handleAIAssistant}>List accounts</button>
+                                <button class="chip" onclick={handleAIAssistant}>Show all resource roles</button>
+                                <button class="chip" onclick={handleAIAssistant}>Quotes pending a</button>
                             </div>
                         </div>
                     </div>
@@ -206,6 +204,10 @@
 
             <template if:true={isAddonsView}>
                 <c-cpq-addons-list></c-cpq-addons-list>
+            </template>
+
+            <template if:true={isSettingsView}>
+                <c-cpq-admin-settings></c-cpq-admin-settings>
             </template>
         </div>
     </div>
