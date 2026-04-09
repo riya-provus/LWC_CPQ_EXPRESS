@@ -46,6 +46,30 @@ public with sharing class ProductListController {
     }
 
     @AuraEnabled
+    public static void updateProduct(Id productId, String name, String description, String billingUnit, 
+                                     Decimal price, Decimal cost, String tags, Boolean active,
+                                     String city, String state, String country, String location) {
+        try {
+            update new CPQ_Product__c(
+                Id = productId,
+                Name = name,
+                Description__c = description,
+                Billing_Unit__c = billingUnit,
+                Price__c = price,
+                Cost__c = cost,
+                Tags__c = tags,
+                Active__c = active,
+                City__c = city,
+                State__c = state,
+                Country__c = country,
+                Location__c = location
+            );
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
     public static void deleteProduct(Id productId) {
         try {
             delete [SELECT Id FROM CPQ_Product__c WHERE Id = :productId];

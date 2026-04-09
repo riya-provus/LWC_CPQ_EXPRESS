@@ -23,14 +23,14 @@
                 <input type="text" placeholder="Search quotes..." class="search-input" oninput={handleSearch}/>
             </div>
             <div class="filters">
-                <div class="custom-dropdown">
+                <div class="custom-dropdown status-filter-container">
                     <button class="dropdown-btn" onclick={toggleStatusDropdown}>
                         <lightning-icon icon-name="utility:filterList" size="xx-small" class="select-icon"></lightning-icon>
                         <span class="btn-label">{dropdownLabel}</span>
                         <lightning-icon icon-name="utility:down" size="xx-small" class="chevron-icon"></lightning-icon>
                     </button>
                     <template if:true={isStatusDropdownOpen}>
-                        <div class="dropdown-menu">
+                        <div class="dropdown-menu" onclick={stopProp}>
                             <ul>
                                 <li data-value="All" onclick={handleStatusSelect}>
                                     All Status <lightning-icon if:true={isStatusAll} icon-name="utility:check" size="xx-small" class="check-icon"></lightning-icon>
@@ -52,18 +52,18 @@
                     </template>
                 </div>
                 <!-- Account Filter Dropdown -->
-                <div class="custom-dropdown">
+                <div class="custom-dropdown account-filter-container">
                     <button class="dropdown-btn" onclick={toggleAccountDropdown}>
                         <lightning-icon icon-name="utility:account" size="xx-small" class="select-icon"></lightning-icon>
                         <span class="btn-label">{accountDropdownLabel}</span>
                         <lightning-icon icon-name="utility:down" size="xx-small" class="chevron-icon"></lightning-icon>
                     </button>
                     <template if:true={isAccountDropdownOpen}>
-                        <div class="dropdown-menu account-menu">
+                        <div class="dropdown-menu account-menu" onclick={stopProp}>
                             <ul>
                                 <li data-id="" data-name="All Accounts" onclick={clearAccountFilter}>
                                     All Accounts
-                                    <lightning-icon if:true={isStatusAll} icon-name="utility:check" size="xx-small" class="check-icon"></lightning-icon>
+                                    <lightning-icon if:true={isAccountAll} icon-name="utility:check" size="xx-small" class="check-icon"></lightning-icon>
                                 </li>
                                 <template for:each={accounts} for:item="acc">
                                     <li key={acc.Id} data-id={acc.Id} data-name={acc.Name} onclick={handleAccountSelect}>
@@ -74,12 +74,12 @@
                         </div>
                     </template>
                 </div>
-                <div class="custom-dropdown">
+                <div class="custom-dropdown view-settings-container">
                     <button class={viewBtnClass} onclick={toggleViewDropdown}>
                         <lightning-icon icon-name="utility:rows" size="xx-small"></lightning-icon> View <div class="badge">{visibleColumnsCount}</div>
                     </button>
                     <template if:true={isViewDropdownOpen}>
-                        <div class="view-settings-menu">
+                        <div class="view-settings-menu" onclick={stopProp}>
                             <div class="view-header">
                                 <span class="view-title">View Settings</span>
                                 <button class="reset-text-btn" onclick={resetView}>Reset</button>
@@ -191,13 +191,13 @@
                     <!-- Opportunity -->
                     <div class="modal-field-group">
                         <label class="modal-label">Opportunity</label>
-                        <div class="custom-dropdown modal-dropdown">
+                        <div class="custom-dropdown modal-dropdown modal-opp-container">
                             <button class="modal-select-btn" onclick={toggleOppDropdown}>
                                 <span class="modal-select-label">{selectedOppLabel}</span>
                                 <lightning-icon icon-name="utility:chevrondown" size="xx-small" class="chevron-icon"></lightning-icon>
                             </button>
                             <template if:true={isOppDropdownOpen}>
-                                <div class="dropdown-menu modal-menu">
+                                <div class="dropdown-menu modal-menu" onclick={stopProp}>
                                     <ul>
                                         <li data-id="" onclick={clearOppSelection}>None (Optional)</li>
                                         <template for:each={filteredOpportunities} for:item="opp">
@@ -212,13 +212,13 @@
                     <!-- Account -->
                     <div class="modal-field-group">
                         <label class="modal-label">Account <span class="required-star">*</span></label>
-                        <div class="custom-dropdown modal-dropdown">
+                        <div class="custom-dropdown modal-dropdown modal-acc-container">
                             <button class="modal-select-btn" onclick={toggleModalAccountDropdown}>
                                 <span class="modal-select-label">{selectedModalAccountLabel}</span>
                                 <lightning-icon icon-name="utility:chevrondown" size="xx-small" class="chevron-icon"></lightning-icon>
                             </button>
                             <template if:true={isModalAccountDropdownOpen}>
-                                <div class="dropdown-menu modal-menu">
+                                <div class="dropdown-menu modal-menu" onclick={stopProp}>
                                     <ul>
                                         <template for:each={accounts} for:item="acc">
                                             <li key={acc.Id} data-id={acc.Id} onclick={handleModalAccountSelect}>{acc.Name}</li>

@@ -136,21 +136,65 @@ export default class CpqQuoteExplorer extends LightningElement {
         this.dispatchEvent(new CustomEvent('back'));
     }
 
+    get isManager() {
+        return this.summary && (this.summary.currentUserRole === 'Manager' || this.summary.currentUserRole === 'Admin');
+    }
+
+    get isAdmin() {
+        return this.summary && this.summary.currentUserRole === 'Admin';
+    }
+
     get canSubmitForApproval() {
-        const status = this.summary && this.summary.status ? this.summary.status : '';
-        return status === 'Draft' || status === '';
+        if (!this.summary) return false;
+        const status = this.summary.status;
+        const isSubmittable = (status === 'Draft' || status === 'Rejected' || !status);
+        
+        // Vanish once it's no longer in a draft/rejected state
+        return isSubmittable;
     }
 
     get isInReview() {
-        return this.summary && this.summary.status === 'In Review';
+        return this.summary && (this.summary.status === 'In Review' || this.summary.status === 'Needs Review' || this.summary.status === 'Rejected');
+    }
+
+    get showApprovalActions() {
+        if (!this.summary) return false;
+        if (this.isAdmin) return this.summary.status !== 'Draft';
+        return this.isInReview;
+    }
+
+    get canApproveReject() {
+        // Admins can always approve/reject if in a pending state, Managers only if In Review
+        return this.isManager && this.isInReview;
+    }
+
+    get canRecall() {
+        // Admins can always recall anything not Draft
+        if (this.isAdmin) return this.summary.status !== 'Draft';
+        return (this.summary.status === 'In Review') && (this.isManager || this.summary.currentUserRole === 'User');
+    }
+
+    get isReadOnly() {
+        if (!this.summary) return true;
+        if (this.isAdmin) return false; // Admins are NEVER restricted
+
+        const status = this.summary.status;
+        
+        // 1. Locked for MUST everyone ELSE if Approved
+        if (status === 'Approved') return true;
+        
+        // 2. Read-Only for standard Users if In Review or Rejected
+        if (!this.isManager && (status === 'In Review' || status === 'Rejected' || status === 'Needs Review')) return true;
+        
+        return false;
+    }
+
+    get showEditActions() {
+        return !this.isReadOnly;
     }
 
     get submitBtnLabel() {
         return this.isSubmitting ? 'Submitting...' : 'Submit for Approval';
-    }
-
-    get isReadOnly() {
-        return this.summary && (this.summary.status === 'Approved' || this.summary.status === 'Rejected' || this.summary.status === 'In Review');
     }
 
     get showEditDescriptionIcon() {
@@ -174,6 +218,10 @@ export default class CpqQuoteExplorer extends LightningElement {
         this.isSubmitting = true;
         try {
             const result = await submitForApproval({ quoteId: this.quoteId });
+            
+            // Instant UI Swap: Force local status update
+            this.summary = { ...this.summary, status: result === 'SUBMITTED' ? 'In Review' : 'In Review' };
+            
             const message = result === 'SUBMITTED'
                 ? 'Quote submitted into the approval workflow successfully.'
                 : 'Quote is now In Review and awaiting approval.';
@@ -211,6 +259,10 @@ export default class CpqQuoteExplorer extends LightningElement {
         this.isProcessingAction = true;
         try {
             await updateQuoteStatus({ quoteId: this.quoteId, newStatus: newStatus });
+            
+            // Instant UI Swap: Force local status update
+            this.summary = { ...this.summary, status: newStatus };
+
             this.dispatchEvent(new ShowToastEvent({ title, message, variant: 'success' }));
             await refreshApex(this._wiredSummaryResult);
             await refreshApex(this._wiredHistoryResult);

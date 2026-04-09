@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>CPQ Admin Settings</label>
+    <hasActivationRequired>false</hasActivationRequired>
+    <description>Grants CPQ Admins access to the Admin Settings page, Company Info, PDF settings, and User management.</description>
+
+
+
+    <!-- ── CPQ_Settings__c Object ─────────────────────────── -->
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>true</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>CPQ_Settings__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+
+    <!-- ── CPQ_Settings__c Field Permissions ──────────────── -->
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.Company_Name__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.Company_Email__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.Company_Phone__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.Company_Website__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.Company_Address__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.Company_City__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.Company_State__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.Company_Zip__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.Company_Country__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.Brand_Logo_URL__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.PDF_Format__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.PDF_Round_Values__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.PDF_Decimal_Places__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.PDF_Show_Discount__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.PDF_Detailed_Line_Items__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.PDF_Footer_Text__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>CPQ_Settings__c.PDF_Section_Layout__c</field><readable>true</readable></fieldPermissions>
+
+    <!-- ── User Object (CPQ_Role__c only) ─────────────────── -->
+    <fieldPermissions><editable>true</editable><field>User.CPQ_Role__c</field><readable>true</readable></fieldPermissions>
+
+    <!-- ── Apex Class Access ────────────────────────────────── -->
+    <classAccesses>
+        <apexClass>CPQAdminController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+</PermissionSet>

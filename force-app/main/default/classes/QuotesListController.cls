@@ -3,16 +3,24 @@ public with sharing class QuotesListController {
     @AuraEnabled(cacheable=true)
     public static List<Quote> getAllQuotes() {
         try {
-            return [
-                SELECT Id, QuoteNumber, OpportunityId, Opportunity.Name, 
-                       Opportunity.AccountId, Opportunity.Account.Name, 
-                       Status, CreatedById, CreatedBy.Name, CreatedDate, 
-                       Total_Amount__c, Discount__c, Margin_Percentage__c,
-                       Description, ExpirationDate
-                FROM Quote 
-                ORDER BY CreatedDate DESC 
-                LIMIT 200
-            ];
+            // Identify the current user's role
+            User curr = [SELECT CPQ_Role__c FROM User WHERE Id = :UserInfo.getUserId() LIMIT 1];
+            String role = curr.CPQ_Role__c != null ? curr.CPQ_Role__c : 'User';
+
+            String query = 'SELECT Id, QuoteNumber, AccountId, OpportunityId, Opportunity.Name, ' +
+                           'Opportunity.AccountId, Opportunity.Account.Name, ' +
+                           'Status, CreatedById, CreatedBy.Name, CreatedDate, ' +
+                           'Total_Amount__c, Discount__c, Margin_Percentage__c, ' +
+                           'Description, ExpirationDate ' +
+                           'FROM Quote ';
+            
+            // Managers strictly see only 'In Review' quotes awaiting their action
+            if (role == 'Manager') {
+                query += 'WHERE Status = \'In Review\' ';
+            }
+
+            query += 'ORDER BY CreatedDate DESC LIMIT 200';
+            return Database.query(query);
         } catch (Exception e) {
             throw new AuraHandledException('Error fetching quotes: ' + e.getMessage());
         }

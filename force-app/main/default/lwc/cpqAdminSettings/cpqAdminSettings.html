@@ -1,0 +1,458 @@
+<template>
+    <div class="settings-wrapper">
+
+        <!-- ──────── SETTINGS SIDEBAR ──────── -->
+        <div class="settings-sidebar">
+            <div class="settings-sidebar-header">
+                <h2 class="settings-title">Settings</h2>
+                <p class="settings-subtitle">Manage your application preferences and organization settings.</p>
+            </div>
+            <nav class="settings-nav">
+                <button class={navClass_companyInfo} data-section="companyInfo" onclick={handleNavClick}>
+                    <lightning-icon icon-name="standard:account" size="x-small" class="nav-icon"></lightning-icon>
+                    Company Info
+                </button>
+                <button class={navClass_pdf} data-section="pdf" onclick={handleNavClick}>
+                    <lightning-icon icon-name="doctype:pdf" size="x-small" class="nav-icon"></lightning-icon>
+                    PDF
+                </button>
+                <button class={navClass_team} data-section="team" onclick={handleNavClick}>
+                    <lightning-icon icon-name="standard:people" size="x-small" class="nav-icon"></lightning-icon>
+                    Team
+                </button>
+            </nav>
+        </div>
+
+        <!-- ──────── MAIN CONTENT PANEL ──────── -->
+        <div class="settings-content">
+
+            <!-- ═══════════════════════════════════════ COMPANY INFO ═══ -->
+            <template if:true={isCompanyInfo}>
+                <div class="section-panel">
+                    <div class="section-header">
+                        <lightning-icon icon-name="standard:account" size="small" class="section-header-icon"></lightning-icon>
+                        <div>
+                            <h3 class="section-title">Company Information</h3>
+                            <p class="section-desc">Configure your company details that appear on PDF quotes</p>
+                        </div>
+                    </div>
+
+                    <div class="form-grid two-col">
+                        <div class="field-group">
+                            <label class="field-label">Company Name</label>
+                            <input type="text" class="field-input" placeholder="Your company name"
+                                   value={settings.companyName} data-key="companyName" onchange={handleFieldChange}/>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">Email</label>
+                            <input type="email" class="field-input" placeholder="contact@company.com"
+                                   value={settings.companyEmail} data-key="companyEmail" onchange={handleFieldChange}/>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">Phone</label>
+                            <input type="tel" class="field-input" placeholder="+1 (555) 000-0000"
+                                   value={settings.companyPhone} data-key="companyPhone" onchange={handleFieldChange}/>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">Website</label>
+                            <input type="url" class="field-input" placeholder="https://yourcompany.com"
+                                   value={settings.companyWebsite} data-key="companyWebsite" onchange={handleFieldChange}/>
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label class="field-label">Address</label>
+                        <input type="text" class="field-input" placeholder="123 Business Street"
+                               value={settings.companyAddress} data-key="companyAddress" onchange={handleFieldChange}/>
+                    </div>
+
+                    <div class="form-grid four-col">
+                        <div class="field-group">
+                            <label class="field-label">City</label>
+                            <input type="text" class="field-input" placeholder="City"
+                                   value={settings.companyCity} data-key="companyCity" onchange={handleFieldChange}/>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">State</label>
+                            <input type="text" class="field-input" placeholder="State"
+                                   value={settings.companyState} data-key="companyState" onchange={handleFieldChange}/>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">Zip Code</label>
+                            <input type="text" class="field-input" placeholder="00000"
+                                   value={settings.companyZip} data-key="companyZip" onchange={handleFieldChange}/>
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">Country</label>
+                            <input type="text" class="field-input" placeholder="Country"
+                                   value={settings.companyCountry} data-key="companyCountry" onchange={handleFieldChange}/>
+                        </div>
+                    </div>
+
+                    <!-- Brand Logo -->
+                    <div class="logo-section">
+                        <label class="field-label">Brand Logo</label>
+                        <p class="field-hint">Choose how your logo appears in generated PDFs</p>
+                        <div class="logo-upload-row">
+                            <div class="logo-dropzone" ondragover={handleDragOver} ondrop={handleLogoDrop}
+                                 onclick={handleLogoClick}>
+                                <lightning-icon icon-name="doctype:image" size="small" class="drop-icon"></lightning-icon>
+                                <span class="drop-text">PNG or JPEG up to 2 MB</span>
+                                <button class="upload-btn" onclick={handleLogoClick}>
+                                    <lightning-icon icon-name="utility:upload" size="xx-small"></lightning-icon>
+                                    Upload logo
+                                </button>
+                                <span class="remove-link" onclick={handleLogoRemove}>Remove</span>
+                                <p class="drop-hint">Allowed formats: PNG, JPG, JPEG. Maximum file size: 2 MB.</p>
+                                <input type="file" class="hidden-file-input" accept="image/png,image/jpeg,image/jpg"
+                                       onchange={handleLogoFileChange}/>
+                            </div>
+                            <div class="logo-preview-box">
+                                <span class="preview-label">Logo preview</span>
+                                <template if:true={logoPreviewUrl}>
+                                    <img src={logoPreviewUrl} alt="Brand Logo" class="logo-preview-img"/>
+                                </template>
+                                <template if:false={logoPreviewUrl}>
+                                    <lightning-icon icon-name="standard:account" size="large" class="no-logo-icon"></lightning-icon>
+                                    <p class="no-logo-text">No logo selected</p>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-row">
+                        <button class="btn-secondary" onclick={handleCancel}>Cancel</button>
+                        <button class="btn-primary" onclick={handleSaveSettings} disabled={isSaving}>
+                            <template if:true={isSaving}>Saving...</template>
+                            <template if:false={isSaving}>Save Changes</template>
+                        </button>
+                    </div>
+                    <template if:true={saveSuccess}><p class="success-msg">✓ Settings saved successfully.</p></template>
+                    <template if:true={saveError}><p class="error-msg">{saveError}</p></template>
+                </div>
+            </template>
+
+            <!-- ═══════════════════════════════════════ PDF ═══════════ -->
+            <template if:true={isPdf}>
+                <div class="section-panel">
+                    <div class="section-header">
+                        <lightning-icon icon-name="doctype:pdf" size="small" class="section-header-icon"></lightning-icon>
+                        <div>
+                            <h3 class="section-title">PDF Configuration</h3>
+                            <p class="section-desc">Configure how PDF quotes are generated and formatted</p>
+                        </div>
+                    </div>
+
+                    <!-- PDF Format -->
+                    <div class="sub-section">
+                        <h4 class="sub-section-title">PDF Format</h4>
+                        <div class="field-group" style="max-width:420px;">
+                            <select class="field-input field-select" value={settings.pdfFormat}
+                                    data-key="pdfFormat" onchange={handleFieldChange}>
+                                <option value="Standard">Standard - Detailed layout with full information</option>
+                                <option value="Compact">Compact - Summary layout</option>
+                                <option value="Minimal">Minimal - Clean layout</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- Value Formatting -->
+                    <div class="sub-section">
+                        <h4 class="sub-section-title">Value Formatting</h4>
+                        <div class="toggle-row">
+                            <span class="toggle-label">Round all values in PDF</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked={settings.pdfRoundValues}
+                                       data-key="pdfRoundValues" onchange={handleCheckboxChange}/>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="field-group" style="max-width:120px; margin-top:12px;">
+                            <label class="field-label">Decimal places:</label>
+                            <select class="field-input field-select" value={settings.pdfDecimalPlaces}
+                                    data-key="pdfDecimalPlaces" onchange={handleFieldChange}>
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- Include in PDF -->
+                    <div class="sub-section">
+                        <h4 class="sub-section-title">Include in PDF</h4>
+                        <div class="toggle-row">
+                            <span class="toggle-label">Show discount information</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked={settings.pdfShowDiscount}
+                                       data-key="pdfShowDiscount" onchange={handleCheckboxChange}/>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-row" style="margin-top:12px;">
+                            <span class="toggle-label">Include detailed line items</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" checked={settings.pdfDetailedLineItems}
+                                       data-key="pdfDetailedLineItems" onchange={handleCheckboxChange}/>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- Footer Text -->
+                    <div class="sub-section">
+                        <h4 class="sub-section-title">Footer Text</h4>
+                        <textarea class="field-input field-textarea" rows="4"
+                                  placeholder="Enter custom footer text for PDF quotes..."
+                                  value={settings.pdfFooterText}
+                                  data-key="pdfFooterText" onchange={handleFieldChange}></textarea>
+                        <p class="field-hint">This text will appear at the bottom of all generated PDF quotes</p>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- PDF Section Layout -->
+                    <div class="sub-section">
+                        <h4 class="sub-section-title">PDF Section Layout</h4>
+                        <p class="field-hint">Reorder sections and control which blocks appear in generated PDFs.</p>
+                        <div class="section-list">
+                            <template for:each={pdfSections} for:item="sec">
+                                <div key={sec.id} class="section-row">
+                                    <span class="drag-handle">⠿</span>
+                                    <div class="section-row-info">
+                                        <span class="section-row-name">{sec.label}</span>
+                                        <span class="section-row-hint">
+                                            <lightning-icon icon-name="utility:preview" size="xx-small"></lightning-icon>
+                                            Visible in PDF
+                                        </span>
+                                    </div>
+                                    <template if:true={sec.visible}>
+                                        <span class="visibility-badge shown">Shown</span>
+                                    </template>
+                                    <template if:false={sec.visible}>
+                                        <span class="visibility-badge hidden-badge">Hidden</span>
+                                    </template>
+                                    <label class="toggle-switch toggle-sm">
+                                        <input type="checkbox" checked={sec.visible}
+                                               data-sectionid={sec.id} onchange={handleSectionToggle}/>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="action-row">
+                        <button class="btn-secondary" onclick={handleCancel}>Cancel</button>
+                        <button class="btn-primary" onclick={handleSaveSettings} disabled={isSaving}>
+                            <template if:true={isSaving}>Saving...</template>
+                            <template if:false={isSaving}>Save Changes</template>
+                        </button>
+                    </div>
+                    <template if:true={saveSuccess}><p class="success-msg">✓ Settings saved successfully.</p></template>
+                    <template if:true={saveError}><p class="error-msg">{saveError}</p></template>
+                </div>
+            </template>
+
+            <!-- ═══════════════════════════════════════ TEAM ══════════ -->
+            <template if:true={isTeam}>
+                <div class="section-panel team-panel">
+                    <!-- Header -->
+                    <div class="team-header-row">
+                        <div class="team-header-left">
+                            <lightning-icon icon-name="standard:people" size="small" class="section-header-icon"></lightning-icon>
+                            <div>
+                                <h3 class="section-title">Manage Your Team</h3>
+                                <p class="section-desc">Manage user access, roles, and permissions.</p>
+                            </div>
+                        </div>
+                        <div class="team-header-right">
+                            <div class="status-filter-wrap">
+                                <label class="filter-label">Status:</label>
+                                <select class="status-filter-select" onchange={handleTeamStatusChange} value={selectedTeamStatus}>
+                                    <option value="All">All Users</option>
+                                    <option value="Active">Active</option>
+                                    <option value="Not Active">Not Active</option>
+                                </select>
+                            </div>
+                            <button class="btn-primary add-member-btn" onclick={handleAddMember}>
+                                + Team Member
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Seat Stats -->
+                    <div class="seat-stats-card">
+                        <div class="stat-block">
+                            <span class="stat-num">{totalSeats}</span>
+                            <span class="stat-label">TOTAL SEATS</span>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-block">
+                            <span class="stat-num">{usedSeats}</span>
+                            <span class="stat-label">USED SEATS</span>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-block">
+                            <span class="stat-num">{availableSeats}</span>
+                            <span class="stat-label">AVAILABLE</span>
+                        </div>
+                    </div>
+
+                    <!-- User Table -->
+                    <div class="user-table-wrap">
+                        <table class="user-table">
+                            <thead>
+                                <tr>
+                                    <th class="col-check"><input type="checkbox" onchange={handleSelectAll}/></th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Last Active</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={processedUsers} for:item="usr">
+                                    <tr key={usr.id} class="user-row">
+                                        <td class="col-check">
+                                            <input type="checkbox" data-userid={usr.id}/>
+                                        </td>
+                                        <td>
+                                            <div class="user-name-cell">
+                                                <div class="user-avatar" style={usr.avatarStyle}>{usr.initials}</div>
+                                                <span class="user-fullname">{usr.name}</span>
+                                            </div>
+                                        </td>
+                                        <td class="cell-email">{usr.email}</td>
+                                        <td>
+                                            <span class={usr.roleBadgeClass}>{usr.role}</span>
+                                        </td>
+                                        <td class="col-status">
+                                            <div class="status-dot-row">
+                                                <span class={usr.statusDotClass}></span>
+                                                <span class="status-label">{usr.statusLabel}</span>
+                                            </div>
+                                        </td>
+                                        <td class="cell-last-active">{usr.lastActiveLabel}</td>
+                                        <td class="col-actions">
+                                            <div class="row-actions">
+                                                <button class="action-menu-btn" data-userid={usr.id}
+                                                        onclick={handleUserMenuToggle}>⋯</button>
+                                                <template if:true={usr.menuOpen}>
+                                                    <div class="action-menu-dropdown">
+                                                        <button data-userid={usr.id} data-status="true"
+                                                                onclick={handleStatusUpdate}>Set as Active</button>
+                                                        <button data-userid={usr.id} data-status="false"
+                                                                onclick={handleStatusUpdate}>Set as Not Active</button>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                        <template if:false={hasUsers}>
+                            <div class="empty-team">
+                                <lightning-icon icon-name="standard:people" size="large"></lightning-icon>
+                                <p>No team members found.</p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+        </div><!-- /settings-content -->
+
+        <!-- ══════ CREATE TEAM MEMBER DRAWER ══════════════════════════ -->
+        <template if:true={showAddMemberDrawer}>
+            <div class="drawer-overlay" onclick={handleOverlayClick}></div>
+            <div class="drawer">
+                <div class="drawer-header">
+                    <div>
+                        <h3 class="drawer-title">Create Team Member</h3>
+                        <p class="drawer-subtitle">Add a team member and select a role before submitting.</p>
+                    </div>
+                    <button class="drawer-close-btn" onclick={handleCloseDrawer}>✕</button>
+                </div>
+                <div class="drawer-body">
+                    <div class="field-group">
+                        <label class="field-label">First Name <span class="required">*</span></label>
+                        <input type="text" class="field-input" placeholder="Enter first name"
+                               value={newUser.firstName} data-field="firstName" onchange={handleNewUserField}/>
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label">Last Name <span class="required">*</span></label>
+                        <input type="text" class="field-input" placeholder="Enter last name"
+                               value={newUser.lastName} data-field="lastName" onchange={handleNewUserField}/>
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label">Email <span class="required">*</span></label>
+                        <input type="email" class="field-input" placeholder="Enter email address"
+                               value={newUser.email} data-field="email" onchange={handleNewUserEmail}/>
+                        <p class="field-hint">Email will also be used as the default username.</p>
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label">Username <span class="required">*</span></label>
+                        <input type="text" class="field-input" placeholder="Enter username (email format)"
+                               value={newUser.username} data-field="username" onchange={handleNewUserField}/>
+                        <p class="field-hint">Must be in email format and be unique. Defaults to the email address if not edited.</p>
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label">Role <span class="required">*</span></label>
+                        <p class="field-hint" style="margin-bottom:10px;">Choose a role to control access and responsibilities.</p>
+                        <div class="role-options">
+                            <label class={roleOptionClass_User}>
+                                <input type="radio" name="newUserRole" value="User"
+                                       checked={isRoleUser} onchange={handleRoleSelect}/>
+                                <div class="role-option-body">
+                                    <lightning-icon icon-name="standard:user" size="small"></lightning-icon>
+                                    <span class="role-option-label">User</span>
+                                    <span class="role-option-desc">Standard access to quotes and products</span>
+                                </div>
+                            </label>
+                            <label class={roleOptionClass_Manager}>
+                                <input type="radio" name="newUserRole" value="Manager"
+                                       checked={isRoleManager} onchange={handleRoleSelect}/>
+                                <div class="role-option-body">
+                                    <lightning-icon icon-name="standard:user_role" size="small"></lightning-icon>
+                                    <span class="role-option-label">Manager</span>
+                                    <span class="role-option-desc">Can approve quotes and manage team</span>
+                                </div>
+                            </label>
+                            <label class={roleOptionClass_Admin}>
+                                <input type="radio" name="newUserRole" value="Admin"
+                                       checked={isRoleAdmin} onchange={handleRoleSelect}/>
+                                <div class="role-option-body">
+                                    <lightning-icon icon-name="standard:setup_assistant_guide" size="small"></lightning-icon>
+                                    <span class="role-option-label">Admin</span>
+                                    <span class="role-option-desc">Full access including settings</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <template if:true={createError}><p class="error-msg">{createError}</p></template>
+                    <template if:true={createSuccess}><p class="success-msg">✓ User created! A reset-password email has been sent.</p></template>
+                </div>
+                <div class="drawer-footer">
+                    <button class="btn-secondary" onclick={handleCloseDrawer}>Cancel</button>
+                    <button class="btn-primary" onclick={handleCreateUser} disabled={isCreating}>
+                        <template if:true={isCreating}>Creating...</template>
+                        <template if:false={isCreating}>Create</template>
+                    </button>
+                </div>
+            </div>
+        </template>
+
+    </div>
+</template>

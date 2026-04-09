@@ -18,7 +18,7 @@
                 <button class="btn btn-icon" title="Refresh" onclick={handleRefresh}>
                     <lightning-icon icon-name="utility:refresh" size="xx-small"></lightning-icon>
                 </button>
-                <button class="btn btn-outline ai-btn">
+                <button class="btn btn-outline ai-btn" onclick={handleAIAssistant}>
                     <lightning-icon icon-name="utility:frozen" size="xx-small" class="margin-right-xs ai-icon"></lightning-icon>
                     AI Assistant
                 </button>
@@ -43,7 +43,7 @@
                     </button>
                     <!-- View Settings Dropdown -->
                     <template if:true={isViewDropdownOpen}>
-                        <div class="dropdown-menu shadow-lg border">
+                        <div class="dropdown-menu shadow-lg border" onclick={stopProp}>
                             <div class="dropdown-header">Table Settings</div>
                             <div class="dropdown-section">
                                 <span class="section-label">Density</span>
@@ -111,7 +111,9 @@
                             <td class="col-checkbox"><input type="checkbox"></td>
                             <td class="text-gray-dimmed">{addon.counter}</td>
                             <template if:true={isColVisible.id}>
-                                <td class="text-primary font-medium">{addon.Addon_ID__c}</td>
+                                <td class="text-primary font-medium">
+                                     <a href="javascript:void(0);" data-id={addon.Id} onclick={handleEdit} class="record-link">{addon.Addon_ID__c}</a>
+                                 </td>
                             </template>
                             <template if:true={isColVisible.name}>
                                 <td class="font-semibold text-gray-dark">
@@ -179,7 +181,7 @@
             <div class="modal-overlay" onclick={closeModal}>
                 <div class="modal-container" onclick={stopProp}>
                     <div class="modal-header">
-                        <h2 class="modal-title">Create New Add-on</h2>
+                        <h2 class="modal-title">{modalTitle}</h2>
                         <button class="modal-close" onclick={closeModal}>×</button>
                     </div>
                     
@@ -215,7 +217,7 @@
                             </div>
                             <div class="field-item">
                                 <label>Billing Unit <span class="required">*</span></label>
-                                <select data-field="billingUnit" onchange={handleInputChange}>
+                                <select data-field="billingUnit" value={newAddon.billingUnit} onchange={handleInputChange}>
                                     <option value="Each">Each</option>
                                     <option value="Hour">Hour</option>
                                     <option value="Day">Day</option>
@@ -259,8 +261,7 @@
                     <div class="modal-footer">
                         <button class="cancel-btn" onclick={closeModal}>Cancel</button>
                         <button class="create-btn" onclick={saveAddon} disabled={isCreating}>
-                            <template if:true={isCreating}>Creating...</template>
-                            <template if:false={isCreating}>Create</template>
+                            {saveBtnLabel}
                         </button>
                     </div>
                 </div>

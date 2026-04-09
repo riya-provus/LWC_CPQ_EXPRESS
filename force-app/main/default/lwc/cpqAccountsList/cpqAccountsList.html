@@ -5,7 +5,7 @@
             <div class="modal-overlay">
                 <div class="modal-container">
                     <div class="modal-header">
-                        <h2 class="modal-title">Create New Account</h2>
+                        <h2 class="modal-title">{modalTitle}</h2>
                         <button class="close-btn" onclick={closeModal}>×</button>
                     </div>
                     <div class="modal-body">
@@ -18,7 +18,7 @@
                         <div class="form-group">
                             <label class="form-label">Type</label>
                             <div class="custom-select-wrapper">
-                                <select class="form-select" data-field="Type" onchange={handleInputChange}>
+                                <select class="form-select" data-field="Type" onchange={handleInputChange} value={newAccount.Type}>
                                     <option value="None">None</option>
                                     <template for:each={typeOptions} for:item="type">
                                         <option key={type} value={type}>{type}</option>
@@ -30,7 +30,7 @@
                         <div class="form-group">
                             <label class="form-label">Industry</label>
                             <div class="custom-select-wrapper">
-                                <select class="form-select" data-field="Industry" onchange={handleInputChange}>
+                                <select class="form-select" data-field="Industry" onchange={handleInputChange} value={newAccount.Industry}>
                                     <option value="None">None</option>
                                     <template for:each={industryOptions} for:item="ind">
                                         <option key={ind} value={ind}>{ind}</option>
@@ -57,7 +57,7 @@
                     </div>
                     <div class="modal-footer">
                         <button class="header-btn" onclick={closeModal}>Cancel</button>
-                        <button class="primary-btn" onclick={handleSaveAccount}>Create Account</button>
+                        <button class="primary-btn" onclick={handleSaveAccount}>{saveBtnLabel}</button>
                     </div>
                 </div>
             </div>
@@ -72,9 +72,9 @@
                 </div>
             </div>
             <div class="header-right">
-                <button class="primary-btn" onclick={handleNewAccount}>+ New</button>
+                <button if:true={isAdmin} class="primary-btn" onclick={handleNewAccount}>+ New</button>
                 <button class="header-btn" onclick={refreshData}><lightning-icon icon-name="utility:refresh" size="xx-small"></lightning-icon> Refresh</button>
-                <button class="header-btn"><lightning-icon icon-name="utility:einstein" size="xx-small"></lightning-icon> AI Assistant</button>
+                <button class="header-btn" onclick={handleAIAssistant}><lightning-icon icon-name="utility:einstein" size="xx-small"></lightning-icon> AI Assistant</button>
             </div>
         </div>
 
@@ -87,14 +87,14 @@
             
             <div class="filters">
                 <!-- Type Filter -->
-                <div class="custom-dropdown">
+                <div class="custom-dropdown type-dropdown-container">
                     <button class="dropdown-btn" onclick={toggleTypeDropdown}>
                         <lightning-icon icon-name="utility:filterList" size="xx-small" class="select-icon"></lightning-icon>
                         <span class="btn-label">{selectedType}</span>
                         <lightning-icon icon-name="utility:down" size="xx-small" class="chevron-icon"></lightning-icon>
                     </button>
                     <template if:true={isTypeDropdownOpen}>
-                        <div class="dropdown-menu">
+                        <div class="dropdown-menu" onclick={stopProp}>
                             <ul>
                                 <li data-value="All Types" onclick={handleTypeSelect}>All Types</li>
                                 <template for:each={typeOptions} for:item="type">
@@ -106,14 +106,14 @@
                 </div>
 
                 <!-- Industry Filter -->
-                <div class="custom-dropdown">
+                <div class="custom-dropdown industry-dropdown-container">
                     <button class="dropdown-btn" onclick={toggleIndustryDropdown}>
                         <lightning-icon icon-name="utility:filterList" size="xx-small" class="select-icon"></lightning-icon>
                         <span class="btn-label">{selectedIndustry}</span>
                         <lightning-icon icon-name="utility:down" size="xx-small" class="chevron-icon"></lightning-icon>
                     </button>
                     <template if:true={isIndustryDropdownOpen}>
-                        <div class="dropdown-menu">
+                        <div class="dropdown-menu" onclick={stopProp}>
                             <ul>
                                 <li data-value="All Industries" onclick={handleIndustrySelect}>All Industries</li>
                                 <template for:each={industryOptions} for:item="ind">
@@ -151,7 +151,7 @@
                             <tr key={acc.Id}>
                                 <td>{acc.indexNumber}</td>
                                 <td>
-                                    <a href={acc.recordUrl} class="account-link">{acc.Name}</a>
+                                    <a href="javascript:void(0);" data-id={acc.Id} onclick={handleEditAccount} class="account-link">{acc.Name}</a>
                                 </td>
                                 <td>{acc.AccountNumber}</td>
                                 <td>

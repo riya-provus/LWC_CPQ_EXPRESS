@@ -5,6 +5,7 @@ import getResourceRoles from '@salesforce/apex/ResourceRoleController.getResourc
 import deleteResourceRole from '@salesforce/apex/ResourceRoleController.deleteResourceRole';
 import toggleResourceRoleActive from '@salesforce/apex/ResourceRoleController.toggleResourceRoleActive';
 import createResourceRole from '@salesforce/apex/ResourceRoleController.createResourceRole';
+import updateResourceRole from '@salesforce/apex/ResourceRoleController.updateResourceRole';
 
 const LS_KEY = 'cpqResourceRolesListViewSettings';
 
@@ -19,6 +20,9 @@ export default class CpqResourceRolesList extends LightningElement {
     @track isCreating = false;
     @track isCompactView = false;
     @track charCount = 0;
+    @track isEditMode = false;
+    @track currentRoleId = null;
+    isListenerAdded = false;
 
     @track newRole = {
         name: '',
@@ -107,6 +111,11 @@ export default class CpqResourceRolesList extends LightningElement {
     get densityCompactClass() { return this.isCompactView ? 'density-btn active' : 'density-btn'; }
     get visibleColumnCount() { return this.columns.filter(c => c.visible).length; }
 
+    get modalTitle() { return this.isEditMode ? 'Edit Resource Role' : 'Create New Resource Role'; }
+    get saveBtnLabel() {
+        return this.isEditMode ? (this.isCreating ? 'Updating...' : 'Update') : (this.isCreating ? 'Creating...' : 'Create');
+    }
+
     get showHash() { return this.columns.find(c => c.id === 'hash').visible; }
     get showId() { return this.columns.find(c => c.id === 'id').visible; }
     get showName() { return this.columns.find(c => c.id === 'name').visible; }
@@ -119,8 +128,33 @@ export default class CpqResourceRolesList extends LightningElement {
     // ── Modal Handlers ───────────────────────────────────────────────────────
 
     openModal() {
+        this.isEditMode = false;
+        this.currentRoleId = null;
         this.isModalOpen = true;
         this.resetNewRole();
+    }
+
+    handleEdit(event) {
+        event.preventDefault();
+        const roleId = event.currentTarget.dataset.id;
+        const role = this.roles.find(r => r.Id === roleId);
+        if (role) {
+            this.isEditMode = true;
+            this.currentRoleId = roleId;
+            this.newRole = {
+                name: role.Name,
+                description: role.Description__c || '',
+                price: role.Price__c,
+                cost: role.Cost__c || 0,
+                billingUnit: role.Billing_Unit__c,
+                city: role.City__c || '',
+                state: role.State__c || '',
+                country: role.Country__c || '',
+                active: role.Active__c
+            };
+            this.charCount = this.newRole.description.length;
+            this.isModalOpen = true;
+        }
     }
 
     closeModal() {
@@ -149,7 +183,7 @@ export default class CpqResourceRolesList extends LightningElement {
         this.newRole.active = event.target.checked;
     }
 
-    async handleCreate() {
+    handleCreate() {
         if (!this.newRole.name || !this.newRole.billingUnit) {
             this.dispatchEvent(new ShowToastEvent({
                 title: 'Error',
@@ -160,35 +194,38 @@ export default class CpqResourceRolesList extends LightningElement {
         }
 
         this.isCreating = true;
-        try {
-            await createResourceRole({
-                name: this.newRole.name,
-                description: this.newRole.description,
-                price: parseFloat(this.newRole.price),
-                cost: parseFloat(this.newRole.cost),
-                billingUnit: this.newRole.billingUnit,
-                city: this.newRole.city,
-                state: this.newRole.state,
-                country: this.newRole.country,
-                active: this.newRole.active
-            });
+        const action = this.isEditMode ? updateResourceRole : createResourceRole;
+        const params = this.isEditMode ? { roleId: this.currentRoleId, ...this.newRole } : this.newRole;
+        const msg = this.isEditMode ? 'Resource Role updated successfully.' : 'Resource Role created successfully.';
 
-            this.dispatchEvent(new ShowToastEvent({
-                title: 'Success',
-                message: 'Resource Role created successfully.',
-                variant: 'success'
-            }));
-            this.isModalOpen = false;
-            await refreshApex(this._wiredRolesResult);
-        } catch (error) {
-            this.dispatchEvent(new ShowToastEvent({
-                title: 'Error creating role',
-                message: error.body ? error.body.message : error.message,
-                variant: 'error'
-            }));
-        } finally {
-            this.isCreating = false;
-        }
+        action(params)
+            .then(() => {
+                this.dispatchEvent(new ShowToastEvent({
+                    title: 'Success',
+                    message: msg,
+                    variant: 'success'
+                }));
+                this.closeModal();
+                return refreshApex(this._wiredRolesResult);
+            })
+            .catch(error => {
+                this.dispatchEvent(new ShowToastEvent({
+                    title: 'Error',
+                    message: error.body ? error.body.message : error.message,
+                    variant: 'error'
+                }));
+            })
+            .finally(() => {
+                this.isCreating = false;
+            });
+    }
+
+    handleAIAssistant() {
+        this.dispatchEvent(new ShowToastEvent({
+            title: 'Feature Coming Soon',
+            message: 'Our Einstein-powered AI assistant is currently being finalized. Stay tuned for intelligent resource optimization and insights!',
+            variant: 'info'
+        }));
     }
 
     // ── Table Settings Handlers ──────────────────────────────────────────────
@@ -219,7 +256,34 @@ export default class CpqResourceRolesList extends LightningElement {
         } catch(e) {}
     }
 
-    toggleViewDropdown() { this.isViewDropdownOpen = !this.isViewDropdownOpen; }
+    toggleViewDropdown(event) { 
+        if (event) event.stopPropagation();
+        this.isViewDropdownOpen = !this.isViewDropdownOpen; 
+        this.isStatusDropdownOpen = false;
+    }
+
+    renderedCallback() {
+        if (!this.isListenerAdded) {
+            this.clickListener = (event) => {
+                const statusDropdown = this.template.querySelector('.status-dropdown-container');
+                const viewDropdown = this.template.querySelector('.view-dropdown-container');
+                
+                const isClickInsideStatus = statusDropdown && statusDropdown.contains(event.target);
+                const isClickInsideView = viewDropdown && viewDropdown.contains(event.target);
+
+                if (!isClickInsideStatus) this.isStatusDropdownOpen = false;
+                if (!isClickInsideView) this.isViewDropdownOpen = false;
+            };
+            document.addEventListener('click', this.clickListener);
+            this.isListenerAdded = true;
+        }
+    }
+
+    disconnectedCallback() {
+        if (this.clickListener) {
+            document.removeEventListener('click', this.clickListener);
+        }
+    }
     setDensityDefault() { this.isCompactView = false; this.saveViewSettings(); }
     setDensityCompact() { this.isCompactView = true; this.saveViewSettings(); }
 
@@ -241,7 +305,11 @@ export default class CpqResourceRolesList extends LightningElement {
     // ── Other Handlers ───────────────────────────────────────────────────────
 
     handleSearch(event) { this.searchTerm = event.target.value; }
-    toggleStatusDropdown() { this.isStatusDropdownOpen = !this.isStatusDropdownOpen; }
+    toggleStatusDropdown(event) { 
+        if (event) event.stopPropagation();
+        this.isStatusDropdownOpen = !this.isStatusDropdownOpen; 
+        this.isViewDropdownOpen = false;
+    }
     handleStatusSelect(event) {
         this.selectedStatus = event.currentTarget.dataset.value;
         this.isStatusDropdownOpen = false;

@@ -2,6 +2,7 @@ import { LightningElement, wire, track } from 'lwc';
 import getDashboardData from '@salesforce/apex/CPQDashboardController.getDashboardData';
 import getQuotesByStatus from '@salesforce/apex/CPQDashboardController.getQuotesByStatus';
 import { NavigationMixin } from 'lightning/navigation';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { refreshApex } from '@salesforce/apex';
 
 export default class CpqDashboard extends NavigationMixin(LightningElement) {
@@ -20,6 +21,7 @@ export default class CpqDashboard extends NavigationMixin(LightningElement) {
     get isProductsView() { return this.currentView === 'Products'; }
     get isAddonsView() { return this.currentView === 'Addons'; }
     get isQuoteExplorerView() { return this.currentView === 'QuoteExplorer'; }
+    get isSettingsView() { return this.currentView === 'Settings'; }
 
     get dashboardClass() { return this.currentView === 'Dashboard' ? 'active' : ''; }
     get dashboardIconClass() { return this.currentView === 'Dashboard' ? 'sidebar-icon-active' : 'sidebar-icon'; }
@@ -38,6 +40,9 @@ export default class CpqDashboard extends NavigationMixin(LightningElement) {
 
     get addonsClass() { return this.currentView === 'Addons' ? 'active' : ''; }
     get addonsIconClass() { return this.currentView === 'Addons' ? 'sidebar-icon-active' : 'sidebar-icon'; }
+
+    get settingsClass() { return this.currentView === 'Settings' ? 'active' : ''; }
+    get settingsIconClass() { return this.currentView === 'Settings' ? 'sidebar-icon-active' : 'sidebar-icon'; }
 
     handleSidebarNav(event) {
         this.currentView = event.currentTarget.dataset.target;
@@ -190,5 +195,13 @@ export default class CpqDashboard extends NavigationMixin(LightningElement) {
                 actionName: 'new'
             }
         });
+    }
+
+    handleAIAssistant() {
+        this.dispatchEvent(new ShowToastEvent({
+            title: 'Feature Coming Soon',
+            message: 'Our Einstein-powered AI assistant is currently being finalized. Stay tuned for intelligent quote generation and insights!',
+            variant: 'info'
+        }));
     }
 }

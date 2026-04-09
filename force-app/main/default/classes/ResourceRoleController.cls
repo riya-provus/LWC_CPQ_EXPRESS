@@ -37,6 +37,26 @@ public with sharing class ResourceRoleController {
     }
 
     @AuraEnabled
+    public static void updateResourceRole(Id roleId, String name, String description, Decimal price, Decimal cost, String billingUnit, String city, String state, String country, Boolean active) {
+        try {
+            update new Resource_Role__c(
+                Id = roleId,
+                Name = name,
+                Description__c = description,
+                Price__c = price,
+                Cost__c = cost,
+                Billing_Unit__c = billingUnit,
+                City__c = city,
+                State__c = state,
+                Country__c = country,
+                Active__c = active
+            );
+        } catch (Exception e) {
+            throw new AuraHandledException('Error updating resource role: ' + e.getMessage());
+        }
+    }
+
+    @AuraEnabled
     public static void deleteResourceRole(Id roleId) {
         try {
             delete [SELECT Id FROM Resource_Role__c WHERE Id = :roleId];

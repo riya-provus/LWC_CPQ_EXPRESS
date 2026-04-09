@@ -3,6 +3,7 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { refreshApex } from '@salesforce/apex';
 import getProducts from '@salesforce/apex/ProductListController.getProducts';
 import createProduct from '@salesforce/apex/ProductListController.createProduct';
+import updateProduct from '@salesforce/apex/ProductListController.updateProduct';
 import deleteProduct from '@salesforce/apex/ProductListController.deleteProduct';
 import toggleProductActive from '@salesforce/apex/ProductListController.toggleProductActive';
 
@@ -15,6 +16,9 @@ export default class CpqProductsList extends LightningElement {
     @track isViewDropdownOpen = false;
     @track searchTerm = '';
     @track density = 'default';
+    @track isEditMode = false;
+    @track currentProductId = null;
+    isListenerAdded = false;
     
     @track newProduct = {
         name: '',
@@ -53,6 +57,7 @@ export default class CpqProductsList extends LightningElement {
             this.products = result.data.map((prod, index) => ({
                 ...prod,
                 counter: index + 1,
+                recordUrl: `/lightning/r/CPQ_Product__c/${prod.Id}/view`,
                 formattedPrice: this.formatCurrency(prod.Price__c),
                 formattedCost: this.formatCurrency(prod.Cost__c)
             }));
@@ -92,6 +97,14 @@ export default class CpqProductsList extends LightningElement {
         return this.newProduct.description ? this.newProduct.description.length : 0;
     }
 
+    get modalTitle() {
+        return this.isEditMode ? 'Edit Product' : 'Create New Product';
+    }
+
+    get saveBtnLabel() {
+        return this.isEditMode ? (this.isCreating ? 'Updating...' : 'Update') : (this.isCreating ? 'Creating...' : 'Create');
+    }
+
     // --- Handlers ---
 
     handleSearch(event) {
@@ -112,8 +125,33 @@ export default class CpqProductsList extends LightningElement {
     }
 
     handleNewProduct() {
+        this.isEditMode = false;
+        this.currentProductId = null;
         this.resetNewProductForm();
         this.isModalOpen = true;
+    }
+
+    handleEdit(event) {
+        event.preventDefault();
+        const productId = event.currentTarget.dataset.id;
+        const prod = this.products.find(p => p.Id === productId);
+        if (prod) {
+            this.isEditMode = true;
+            this.currentProductId = productId;
+            this.newProduct = {
+                name: prod.Name,
+                description: prod.Description__c || '',
+                billingUnit: prod.Billing_Unit__c,
+                price: prod.Price__c,
+                cost: prod.Cost__c || 0,
+                tags: prod.Tags__c || '',
+                active: prod.Active__c,
+                city: prod.City__c || '',
+                state: prod.State__c || '',
+                country: prod.Country__c || ''
+            };
+            this.isModalOpen = true;
+        }
     }
 
     closeModal() {
@@ -140,20 +178,38 @@ export default class CpqProductsList extends LightningElement {
         const locationStr = [this.newProduct.city, this.newProduct.state, this.newProduct.country].filter(Boolean).join(', ');
 
         try {
-            await createProduct({
-                name: this.newProduct.name,
-                description: this.newProduct.description,
-                billingUnit: this.newProduct.billingUnit,
-                price: this.newProduct.price,
-                cost: this.newProduct.cost,
-                tags: this.newProduct.tags,
-                active: this.newProduct.active,
-                city: this.newProduct.city,
-                state: this.newProduct.state,
-                country: this.newProduct.country,
-                location: locationStr
-            });
-            this.showToast('Success', 'Product created successfully', 'success');
+            if (this.isEditMode) {
+                await updateProduct({
+                    productId: this.currentProductId,
+                    name: this.newProduct.name,
+                    description: this.newProduct.description,
+                    billingUnit: this.newProduct.billingUnit,
+                    price: this.newProduct.price,
+                    cost: this.newProduct.cost,
+                    tags: this.newProduct.tags,
+                    active: this.newProduct.active,
+                    city: this.newProduct.city,
+                    state: this.newProduct.state,
+                    country: this.newProduct.country,
+                    location: locationStr
+                });
+                this.showToast('Success', 'Product updated successfully', 'success');
+            } else {
+                await createProduct({
+                    name: this.newProduct.name,
+                    description: this.newProduct.description,
+                    billingUnit: this.newProduct.billingUnit,
+                    price: this.newProduct.price,
+                    cost: this.newProduct.cost,
+                    tags: this.newProduct.tags,
+                    active: this.newProduct.active,
+                    city: this.newProduct.city,
+                    state: this.newProduct.state,
+                    country: this.newProduct.country,
+                    location: locationStr
+                });
+                this.showToast('Success', 'Product created successfully', 'success');
+            }
             this.isModalOpen = false;
             await refreshApex(this.wiredProductsResult);
         } catch (error) {
@@ -225,8 +281,27 @@ export default class CpqProductsList extends LightningElement {
         } catch(e) {}
     }
 
-    toggleViewDropdown() {
+    toggleViewDropdown(event) {
+        if (event) event.stopPropagation();
         this.isViewDropdownOpen = !this.isViewDropdownOpen;
+    }
+
+    renderedCallback() {
+        if (!this.isListenerAdded) {
+            this.clickListener = (event) => {
+                const viewDropdown = this.template.querySelector('.view-settings-container');
+                const isClickInsideView = viewDropdown && viewDropdown.contains(event.target);
+                if (!isClickInsideView) this.isViewDropdownOpen = false;
+            };
+            document.addEventListener('click', this.clickListener);
+            this.isListenerAdded = true;
+        }
+    }
+
+    disconnectedCallback() {
+        if (this.clickListener) {
+            document.removeEventListener('click', this.clickListener);
+        }
     }
 
     toggleColumn(event) {
@@ -256,8 +331,12 @@ export default class CpqProductsList extends LightningElement {
         }).format(value);
     }
 
-    showToast(title, message, variant) {
-        this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
+    handleAIAssistant() {
+        this.dispatchEvent(new ShowToastEvent({
+            title: 'Feature Coming Soon',
+            message: 'Our Einstein-powered AI assistant is currently being finalized. Stay tuned for intelligent product recommendations and insights!',
+            variant: 'info'
+        }));
     }
 
     resetNewProductForm() {

@@ -62,4 +62,19 @@ public with sharing class AccountListController {
             throw new AuraHandledException('Error creating account: ' + e.getMessage());
         }
     }
+
+    @AuraEnabled
+    public static void updateAccount(Id accountId, String name, String type, String industry, String phone, String website) {
+        try {
+            Account acc = new Account(Id = accountId);
+            acc.Name = name;
+            acc.Type = type != 'None' ? type : null;
+            acc.Industry = industry != 'None' ? industry : null;
+            acc.Phone = phone;
+            acc.Website = website;
+            update acc;
+        } catch (Exception e) {
+            throw new AuraHandledException('Error updating account: ' + e.getMessage());
+        }
+    }
 }

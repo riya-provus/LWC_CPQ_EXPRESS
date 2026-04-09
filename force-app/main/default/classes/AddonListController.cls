@@ -46,6 +46,30 @@ public with sharing class AddonListController {
     }
 
     @AuraEnabled
+    public static void updateAddon(Id addonId, String name, String description, String billingUnit, 
+                                   Decimal price, Decimal cost, String tags, Boolean active,
+                                   String city, String state, String country, String location) {
+        try {
+            update new CPQ_Addon__c(
+                Id = addonId,
+                Name = name,
+                Description__c = description,
+                Billing_Unit__c = billingUnit,
+                Price__c = price,
+                Cost__c = cost,
+                Tags__c = tags,
+                Active__c = active,
+                City__c = city,
+                State__c = state,
+                Country__c = country,
+                Location__c = location
+            );
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    @AuraEnabled
     public static void deleteAddon(Id addonId) {
         try {
             delete [SELECT Id FROM CPQ_Addon__c WHERE Id = :addonId];

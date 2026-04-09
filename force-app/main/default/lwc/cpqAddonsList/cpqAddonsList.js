@@ -3,6 +3,7 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { refreshApex } from '@salesforce/apex';
 import getAddons from '@salesforce/apex/AddonListController.getAddons';
 import createAddon from '@salesforce/apex/AddonListController.createAddon';
+import updateAddon from '@salesforce/apex/AddonListController.updateAddon';
 import deleteAddon from '@salesforce/apex/AddonListController.deleteAddon';
 import toggleAddonActive from '@salesforce/apex/AddonListController.toggleAddonActive';
 
@@ -15,6 +16,9 @@ export default class CpqAddonsList extends LightningElement {
     @track isViewDropdownOpen = false;
     @track searchTerm = '';
     @track density = 'default';
+    @track isEditMode = false;
+    @track currentAddonId = null;
+    isListenerAdded = false;
     
     @track newAddon = {
         name: '',
@@ -53,6 +57,7 @@ export default class CpqAddonsList extends LightningElement {
             this.addons = result.data.map((addon, index) => ({
                 ...addon,
                 counter: index + 1,
+                recordUrl: `/lightning/r/CPQ_Addon__c/${addon.Id}/view`,
                 formattedPrice: this.formatCurrency(addon.Price__c),
                 formattedCost: this.formatCurrency(addon.Cost__c)
             }));
@@ -92,6 +97,14 @@ export default class CpqAddonsList extends LightningElement {
         return this.newAddon.description ? this.newAddon.description.length : 0;
     }
 
+    get modalTitle() {
+        return this.isEditMode ? 'Edit Add-on' : 'Create New Add-on';
+    }
+
+    get saveBtnLabel() {
+        return this.isEditMode ? (this.isCreating ? 'Updating...' : 'Update') : (this.isCreating ? 'Creating...' : 'Create');
+    }
+
     // --- Handlers ---
 
     handleSearch(event) {
@@ -112,8 +125,33 @@ export default class CpqAddonsList extends LightningElement {
     }
 
     handleNewAddon() {
+        this.isEditMode = false;
+        this.currentAddonId = null;
         this.resetNewAddonForm();
         this.isModalOpen = true;
+    }
+
+    handleEdit(event) {
+        event.preventDefault();
+        const addonId = event.currentTarget.dataset.id;
+        const addon = this.addons.find(a => a.Id === addonId);
+        if (addon) {
+            this.isEditMode = true;
+            this.currentAddonId = addonId;
+            this.newAddon = {
+                name: addon.Name,
+                description: addon.Description__c || '',
+                billingUnit: addon.Billing_Unit__c,
+                price: addon.Price__c,
+                cost: addon.Cost__c || 0,
+                tags: addon.Tags__c || '',
+                active: addon.Active__c,
+                city: addon.City__c || '',
+                state: addon.State__c || '',
+                country: addon.Country__c || ''
+            };
+            this.isModalOpen = true;
+        }
     }
 
     closeModal() {
@@ -140,20 +178,38 @@ export default class CpqAddonsList extends LightningElement {
         const locationStr = [this.newAddon.city, this.newAddon.state, this.newAddon.country].filter(Boolean).join(', ');
 
         try {
-            await createAddon({
-                name: this.newAddon.name,
-                description: this.newAddon.description,
-                billingUnit: this.newAddon.billingUnit,
-                price: this.newAddon.price,
-                cost: this.newAddon.cost,
-                tags: this.newAddon.tags,
-                active: this.newAddon.active,
-                city: this.newAddon.city,
-                state: this.newAddon.state,
-                country: this.newAddon.country,
-                location: locationStr
-            });
-            this.showToast('Success', 'Add-on created successfully', 'success');
+            if (this.isEditMode) {
+                await updateAddon({
+                    addonId: this.currentAddonId,
+                    name: this.newAddon.name,
+                    description: this.newAddon.description,
+                    billingUnit: this.newAddon.billingUnit,
+                    price: this.newAddon.price,
+                    cost: this.newAddon.cost,
+                    tags: this.newAddon.tags,
+                    active: this.newAddon.active,
+                    city: this.newAddon.city,
+                    state: this.newAddon.state,
+                    country: this.newAddon.country,
+                    location: locationStr
+                });
+                this.showToast('Success', 'Add-on updated successfully', 'success');
+            } else {
+                await createAddon({
+                    name: this.newAddon.name,
+                    description: this.newAddon.description,
+                    billingUnit: this.newAddon.billingUnit,
+                    price: this.newAddon.price,
+                    cost: this.newAddon.cost,
+                    tags: this.newAddon.tags,
+                    active: this.newAddon.active,
+                    city: this.newAddon.city,
+                    state: this.newAddon.state,
+                    country: this.newAddon.country,
+                    location: locationStr
+                });
+                this.showToast('Success', 'Add-on created successfully', 'success');
+            }
             this.isModalOpen = false;
             await refreshApex(this.wiredAddonsResult);
         } catch (error) {
@@ -161,6 +217,14 @@ export default class CpqAddonsList extends LightningElement {
         } finally {
             this.isCreating = false;
         }
+    }
+
+    handleAIAssistant() {
+        this.dispatchEvent(new ShowToastEvent({
+            title: 'Feature Coming Soon',
+            message: 'Our Einstein-powered AI assistant is currently being finalized. Stay tuned for intelligent add-on recommendations and insights!',
+            variant: 'info'
+        }));
     }
 
     async handleDelete(event) {
@@ -224,8 +288,27 @@ export default class CpqAddonsList extends LightningElement {
         } catch(e) {}
     }
 
-    toggleViewDropdown() {
+    toggleViewDropdown(event) {
+        if (event) event.stopPropagation();
         this.isViewDropdownOpen = !this.isViewDropdownOpen;
+    }
+
+    renderedCallback() {
+        if (!this.isListenerAdded) {
+            this.clickListener = (event) => {
+                const viewDropdown = this.template.querySelector('.view-settings-container');
+                const isClickInsideView = viewDropdown && viewDropdown.contains(event.target);
+                if (!isClickInsideView) this.isViewDropdownOpen = false;
+            };
+            document.addEventListener('click', this.clickListener);
+            this.isListenerAdded = true;
+        }
+    }
+
+    disconnectedCallback() {
+        if (this.clickListener) {
+            document.removeEventListener('click', this.clickListener);
+        }
     }
 
     toggleColumn(event) {

@@ -27,17 +27,17 @@
                             {submitBtnLabel}
                         </button>
                     </template>
-                    <!-- Recall / Approve / Reject: shown when In Review -->
-                    <template if:true={isInReview}>
-                        <button class="review-btn recall" onclick={handleRecall} disabled={isProcessingAction}>
+                    <!-- Recall / Approve / Reject: shown based on Role & Status -->
+                    <template if:true={showApprovalActions}>
+                        <button if:true={canRecall} class="review-btn recall" onclick={handleRecall} disabled={isProcessingAction}>
                             <lightning-icon icon-name="utility:undo" size="xx-small" alternative-text="Recall"></lightning-icon>
                             Recall
                         </button>
-                        <button class="review-btn approve" onclick={handleApprove} disabled={isProcessingAction}>
+                        <button if:true={canApproveReject} class="review-btn approve" onclick={handleApprove} disabled={isProcessingAction}>
                             <lightning-icon icon-name="utility:check" size="xx-small" alternative-text="Approve"></lightning-icon>
                             Approve
                         </button>
-                        <button class="review-btn reject" onclick={handleReject} disabled={isProcessingAction}>
+                        <button if:true={canApproveReject} class="review-btn reject" onclick={handleReject} disabled={isProcessingAction}>
                             <lightning-icon icon-name="utility:close" size="xx-small" alternative-text="Reject"></lightning-icon>
                             Reject
                         </button>
