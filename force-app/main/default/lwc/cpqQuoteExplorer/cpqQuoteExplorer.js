@@ -147,14 +147,14 @@ export default class CpqQuoteExplorer extends LightningElement {
     get canSubmitForApproval() {
         if (!this.summary) return false;
         const status = this.summary.status;
-        const isSubmittable = (status === 'Draft' || status === 'Rejected' || !status);
+        const isSubmittable = (status === 'Draft' || !status);
         
-        // Vanish once it's no longer in a draft/rejected state
+        // Vanish once it's no longer in a draft state
         return isSubmittable;
     }
 
     get isInReview() {
-        return this.summary && (this.summary.status === 'In Review' || this.summary.status === 'Needs Review' || this.summary.status === 'Rejected');
+        return this.summary && (this.summary.status === 'In Review' || this.summary.status === 'Needs Review');
     }
 
     get showApprovalActions() {
@@ -171,7 +171,8 @@ export default class CpqQuoteExplorer extends LightningElement {
     get canRecall() {
         // Admins can always recall anything not Draft
         if (this.isAdmin) return this.summary.status !== 'Draft';
-        return (this.summary.status === 'In Review') && (this.isManager || this.summary.currentUserRole === 'User');
+        // Managers can recall quotes that are In Review, but standard Users cannot
+        return (this.summary.status === 'In Review' || this.summary.status === 'Needs Review') && this.isManager;
     }
 
     get isReadOnly() {
@@ -180,11 +181,11 @@ export default class CpqQuoteExplorer extends LightningElement {
 
         const status = this.summary.status;
         
-        // 1. Locked for MUST everyone ELSE if Approved
-        if (status === 'Approved') return true;
+        // 1. Terminal Locking: Approved or Rejected quotes are now completely immutable
+        if (status === 'Approved' || status === 'Rejected') return true;
         
-        // 2. Read-Only for standard Users if In Review or Rejected
-        if (!this.isManager && (status === 'In Review' || status === 'Rejected' || status === 'Needs Review')) return true;
+        // 2. Process Locking: Standard Users cannot edit quotes while In Review or awaiting action
+        if (!this.isManager && (status === 'In Review' || status === 'Needs Review')) return true;
         
         return false;
     }
