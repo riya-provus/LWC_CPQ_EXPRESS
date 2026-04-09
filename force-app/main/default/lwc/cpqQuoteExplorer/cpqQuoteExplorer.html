@@ -201,29 +201,6 @@
                             </div>
                         </div>
 
-                        <!-- Right Sidebar (Metadata & Logs) -->
-                        <div class="explorer-sidebar">
-                            <!-- Approval History Card -->
-                            <div class="sidebar-card">
-                                <h3 class="sidebar-title">Approval History</h3>
-                                <div class="history-list">
-                                    <template for:each={approvalHistory} for:item="step">
-                                        <div key={step.id} class="history-item">
-                                            <div class="history-marker-line">
-                                                <div class={step.statusClass}></div>
-                                            </div>
-                                            <div class="history-content">
-                                                <div class="history-header">
-                                                    <span class="history-status">{step.status}</span>
-                                                    <span class="history-date">{step.formattedDate}</span>
-                                                </div>
-                                                <p class="history-actor">By {step.actorName}</p>
-                                                <p if:true={step.comments} class="history-comment">"{step.comments}"</p>
-                                            </div>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </template>
@@ -466,7 +443,7 @@
                             <template if:true={analyzerNeedApproval}>
                                 <div class="approval-warning">
                                     <lightning-icon icon-name="utility:warning" size="small" variant="error"></lightning-icon>
-                                    <span><strong>VP Approval Required.</strong> The configured margin dropped below the 20% safe zone constraint.</span>
+                                    <span><strong>Manager Approval Required.</strong> The configured margin dropped below the 20% safe zone constraint.</span>
                                 </div>
                             </template>
                             <template if:false={analyzerNeedApproval}>

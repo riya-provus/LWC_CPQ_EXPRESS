@@ -157,6 +157,9 @@
                             <template if:true={showDiscount}><td>{quote.formattedDiscount}</td></template>
                             <template if:true={showMargin}><td>{quote.formattedMargin}</td></template>
                             <td class="actions-cell">
+                                <button class="view-btn" title="View Quote" data-id={quote.Id} onclick={handleQuoteClick}>
+                                    View <lightning-icon icon-name="utility:forward" size="xx-small" class="view-icon"></lightning-icon>
+                                </button>
                                 <button class="icon-btn" title="Clone" data-id={quote.Id} onclick={handleClone}>
                                     <lightning-icon icon-name="utility:copy" size="xx-small"></lightning-icon>
                                 </button>
