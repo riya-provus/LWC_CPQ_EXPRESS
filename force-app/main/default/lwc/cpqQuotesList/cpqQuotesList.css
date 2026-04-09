@@ -412,18 +412,60 @@
 
 .actions-cell {
     display: flex;
-    gap: 8px;
+    align-items: center;
+    gap: 12px;
 }
-.icon-btn {
-    background: none;
+
+.view-btn {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: #ffffff;
     border: none;
+    border-radius: 12px;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 700;
     cursor: pointer;
-    padding: 4px;
-    color: #64748b;
-    --sds-c-icon-color-foreground-default: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    white-space: nowrap;
 }
+
+.view-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.35);
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+.view-btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.view-icon {
+    --sds-c-icon-color-foreground-default: #ffffff;
+}
+
+.icon-btn {
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    cursor: pointer;
+    padding: 10px;
+    color: #64748b;
+    border-radius: 10px;
+    --sds-c-icon-color-foreground-default: #64748b;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .icon-btn:hover {
+    background: #ffffff;
+    border-color: #cbd5e1;
     --sds-c-icon-color-foreground-default: #0f172a;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
 /* Account menu wider */
