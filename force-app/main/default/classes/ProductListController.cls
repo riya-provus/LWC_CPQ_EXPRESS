@@ -16,54 +16,22 @@ public with sharing class ProductListController {
     }
 
     @AuraEnabled
-    public static CPQ_Product__c createProduct(String name, String description, String billingUnit, 
-                                             Decimal price, Decimal cost, String tags, Boolean active,
-                                             String city, String state, String country, String location) {
+    public static CPQ_Product__c createProduct(CPQ_Product__c product) {
         try {
-            CPQ_Product__c newProd = new CPQ_Product__c(
-                Name = name,
-                Description__c = description,
-                Billing_Unit__c = billingUnit,
-                Price__c = price,
-                Cost__c = cost,
-                Tags__c = tags,
-                Active__c = active,
-                City__c = city,
-                State__c = state,
-                Country__c = country,
-                Location__c = location
-            );
-            insert newProd;
-            
-            // Re-query to get the auto-number ID
+            insert product;
             return [SELECT Id, Name, Product_ID__c, Description__c, Billing_Unit__c, 
                            Price__c, Cost__c, Tags__c, Active__c, City__c, State__c, 
                            Country__c, Location__c
-                    FROM CPQ_Product__c WHERE Id = :newProd.Id];
+                    FROM CPQ_Product__c WHERE Id = :product.Id];
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
         }
     }
 
     @AuraEnabled
-    public static void updateProduct(Id productId, String name, String description, String billingUnit, 
-                                     Decimal price, Decimal cost, String tags, Boolean active,
-                                     String city, String state, String country, String location) {
+    public static void updateProduct(CPQ_Product__c product) {
         try {
-            update new CPQ_Product__c(
-                Id = productId,
-                Name = name,
-                Description__c = description,
-                Billing_Unit__c = billingUnit,
-                Price__c = price,
-                Cost__c = cost,
-                Tags__c = tags,
-                Active__c = active,
-                City__c = city,
-                State__c = state,
-                Country__c = country,
-                Location__c = location
-            );
+            update product;
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
         }

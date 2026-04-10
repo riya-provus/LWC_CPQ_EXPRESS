@@ -178,8 +178,10 @@ export default class CpqAddonsList extends LightningElement {
 
     handleInputChange(event) {
         const field = event.target.dataset.field;
-        const value = event.target.type === 'checkbox' || event.target.type === 'toggle' ? event.target.checked : event.target.value;
-        this.newAddon[field] = value;
+        const value = (event.target.type === 'checkbox' || event.target.type === 'toggle') 
+            ? event.target.checked 
+            : event.target.value;
+        this.newAddon = { ...this.newAddon, [field]: value };
     }
 
     async saveAddon() {

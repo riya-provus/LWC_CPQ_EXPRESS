@@ -178,13 +178,21 @@ export default class CpqProductsList extends LightningElement {
 
     handleInputChange(event) {
         const field = event.target.dataset.field;
-        const value = event.target.type === 'checkbox' || event.target.type === 'toggle' ? event.target.checked : event.target.value;
-        this.newProduct[field] = value;
+        const value = (event.target.type === 'checkbox' || event.target.type === 'toggle') 
+            ? event.target.checked 
+            : event.target.value;
+        
+        // Use spread to ensure LWC reactivity triggers correctly
+        this.newProduct = { 
+            ...this.newProduct, 
+            [field]: value 
+        };
     }
 
     async saveProduct() {
-        if (!this.newProduct.name || this.newProduct.price === undefined || !this.newProduct.billingUnit) {
-            this.showToast('Error', 'Please fill in all required fields', 'error');
+        // Strict validation
+        if (!this.newProduct.name || this.newProduct.price === undefined || this.newProduct.price === null || this.newProduct.price === '' || !this.newProduct.billingUnit) {
+            this.showToast('Error', 'Please fill in required fields (Name, Price, Billing Unit)', 'error');
             return;
         }
 
@@ -192,42 +200,55 @@ export default class CpqProductsList extends LightningElement {
         const locationStr = [this.newProduct.city, this.newProduct.state, this.newProduct.country].filter(Boolean).join(', ');
 
         try {
+            // Ensure numeric fields are actually numbers to avoid Apex casting issues
+            const priceVal = parseFloat(this.newProduct.price) || 0;
+            const costVal = parseFloat(this.newProduct.cost) || 0;
+
             if (this.isEditMode) {
-                await updateProduct({
-                    productId: this.currentProductId,
-                    name: this.newProduct.name,
-                    description: this.newProduct.description,
-                    billingUnit: this.newProduct.billingUnit,
-                    price: this.newProduct.price,
-                    cost: this.newProduct.cost,
-                    tags: this.newProduct.tags,
-                    active: this.newProduct.active,
-                    city: this.newProduct.city,
-                    state: this.newProduct.state,
-                    country: this.newProduct.country,
-                    location: locationStr
-                });
+                if (!this.currentProductId) throw new Error('Missing Product ID for update.');
+
+                const productRecord = {
+                    Id: this.currentProductId,
+                    Name: this.newProduct.name,
+                    Description__c: this.newProduct.description,
+                    Billing_Unit__c: this.newProduct.billingUnit,
+                    Price__c: priceVal,
+                    Cost__c: costVal,
+                    Tags__c: this.newProduct.tags,
+                    Active__c: this.newProduct.active,
+                    City__c: this.newProduct.city,
+                    State__c: this.newProduct.state,
+                    Country__c: this.newProduct.country,
+                    Location__c: locationStr
+                };
+
+                await updateProduct({ product: productRecord });
+                this.isModalOpen = false; // "Vanish" immediately
                 this.showToast('Success', 'Product updated successfully', 'success');
             } else {
-                await createProduct({
-                    name: this.newProduct.name,
-                    description: this.newProduct.description,
-                    billingUnit: this.newProduct.billingUnit,
-                    price: this.newProduct.price,
-                    cost: this.newProduct.cost,
-                    tags: this.newProduct.tags,
-                    active: this.newProduct.active,
-                    city: this.newProduct.city,
-                    state: this.newProduct.state,
-                    country: this.newProduct.country,
-                    location: locationStr
-                });
+                const productRecord = {
+                    Name: this.newProduct.name,
+                    Description__c: this.newProduct.description,
+                    Billing_Unit__c: this.newProduct.billingUnit,
+                    Price__c: priceVal,
+                    Cost__c: costVal,
+                    Tags__c: this.newProduct.tags,
+                    Active__c: this.newProduct.active,
+                    City__c: this.newProduct.city,
+                    State__c: this.newProduct.state,
+                    Country__c: this.newProduct.country,
+                    Location__c: locationStr
+                };
+
+                await createProduct({ product: productRecord });
+                this.isModalOpen = false; // "Vanish" immediately
                 this.showToast('Success', 'Product created successfully', 'success');
             }
-            this.isModalOpen = false;
             await refreshApex(this.wiredProductsResult);
         } catch (error) {
-            this.showToast('Error', error.body.message, 'error');
+            const msg = error.body ? error.body.message : error.message;
+            this.showToast('Error Updating Product', msg, 'error');
+            console.error('Update Product Error:', error);
         } finally {
             this.isCreating = false;
         }

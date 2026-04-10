@@ -185,7 +185,10 @@ export default class CpqResourceRolesList extends LightningElement {
 
     handleInputChange(event) {
         const field = event.target.dataset.field;
-        this.newRole = { ...this.newRole, [field]: event.target.value };
+        const value = (event.target.type === 'checkbox' || event.target.type === 'toggle') 
+            ? event.target.checked 
+            : event.target.value;
+        this.newRole = { ...this.newRole, [field]: value };
     }
 
     handleDescInput(event) {
