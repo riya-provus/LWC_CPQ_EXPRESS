@@ -282,9 +282,11 @@
                                     <option value="Not Active">Not Active</option>
                                 </select>
                             </div>
-                            <button class="btn-primary add-member-btn" onclick={handleAddMember}>
-                                + Team Member
-                            </button>
+                            <template if:true={showAddMemberButton}>
+                                <button class="btn-primary add-member-btn" onclick={handleAddMember}>
+                                    + Team Member
+                                </button>
+                            </template>
                         </div>
                     </div>
 

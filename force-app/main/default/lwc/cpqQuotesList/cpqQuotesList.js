@@ -6,6 +6,7 @@ import getOpportunities from '@salesforce/apex/QuotesListController.getOpportuni
 import createQuote from '@salesforce/apex/QuotesListController.createQuote';
 import deleteQuote from '@salesforce/apex/QuotesListController.deleteQuote';
 import cloneQuote from '@salesforce/apex/QuotesListController.cloneQuote';
+import getCurrentUserRole from '@salesforce/apex/CPQAdminController.getCurrentUserRole';
 
 const LS_KEY = 'cpqQuotesListViewSettings';
 
@@ -57,6 +58,19 @@ export default class CpqQuotesList extends LightningElement {
         { id: 'discount', label: 'Discount %', visible: true, locked: false },
         { id: 'margin', label: 'Margin %', visible: true, locked: false }
     ];
+
+    @track currentUserRole = 'User';
+
+    @wire(getCurrentUserRole)
+    wiredUserRole({ error, data }) {
+        if (data) {
+            this.currentUserRole = data;
+            // If manager, set default filter to 'In Review'
+            if (this.currentUserRole === 'Manager' && this.selectedStatus === 'All') {
+                this.selectedStatus = 'In Review';
+            }
+        }
+    }
 
     // ── Wire Services ──────────────────────────────────────────────────────────
 
@@ -172,6 +186,7 @@ export default class CpqQuotesList extends LightningElement {
     get isStatusAll() { return this.selectedStatus === 'All'; }
     get isStatusDraft() { return this.selectedStatus === 'Draft'; }
     get isStatusPending() { return this.selectedStatus === 'Pending Approval'; }
+    get isStatusInReview() { return this.selectedStatus === 'In Review'; }
     get isStatusApproved() { return this.selectedStatus === 'Approved'; }
     get isStatusRejected() { return this.selectedStatus === 'Rejected'; }
 

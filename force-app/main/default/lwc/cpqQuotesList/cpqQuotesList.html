@@ -41,6 +41,9 @@
                                 <li data-value="Pending Approval" onclick={handleStatusSelect}>
                                     Pending Approval <lightning-icon if:true={isStatusPending} icon-name="utility:check" size="xx-small" class="check-icon"></lightning-icon>
                                 </li>
+                                <li data-value="In Review" onclick={handleStatusSelect}>
+                                    In Review <lightning-icon if:true={isStatusInReview} icon-name="utility:check" size="xx-small" class="check-icon"></lightning-icon>
+                                </li>
                                 <li data-value="Approved" onclick={handleStatusSelect}>
                                     Approved <lightning-icon if:true={isStatusApproved} icon-name="utility:check" size="xx-small" class="check-icon"></lightning-icon>
                                 </li>

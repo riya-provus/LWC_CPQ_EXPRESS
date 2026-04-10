@@ -10,7 +10,9 @@
                 </div>
             </div>
             <div class="header-right">
-                <button class="primary-btn" onclick={openModal}>+ New</button>
+                <template if:true={canCreate}>
+                    <button class="primary-btn" onclick={openModal}>+ New</button>
+                </template>
                 <button class="header-btn"><lightning-icon icon-name="utility:import" size="xx-small"></lightning-icon> Import</button>
                 <button class="header-btn" onclick={refreshData}><lightning-icon icon-name="utility:refresh" size="xx-small"></lightning-icon> Refresh</button>
                 <button class="header-btn" onclick={handleAIAssistant}><lightning-icon icon-name="utility:einstein" size="xx-small"></lightning-icon> AI Assistant</button>

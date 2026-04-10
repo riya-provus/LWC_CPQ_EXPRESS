@@ -6,6 +6,7 @@ import createProduct from '@salesforce/apex/ProductListController.createProduct'
 import updateProduct from '@salesforce/apex/ProductListController.updateProduct';
 import deleteProduct from '@salesforce/apex/ProductListController.deleteProduct';
 import toggleProductActive from '@salesforce/apex/ProductListController.toggleProductActive';
+import getCurrentUserRole from '@salesforce/apex/CPQAdminController.getCurrentUserRole';
 
 const LS_KEY = 'cpqProductsListViewSettings';
 
@@ -43,6 +44,19 @@ export default class CpqProductsList extends LightningElement {
         { id: 'tags', label: 'Tags', visible: true },
         { id: 'active', label: 'Active', visible: true }
     ];
+
+    @track currentUserRole = 'User';
+
+    @wire(getCurrentUserRole)
+    wiredUserRole({ error, data }) {
+        if (data) {
+            this.currentUserRole = data;
+        }
+    }
+
+    get canCreate() {
+        return this.currentUserRole !== 'User';
+    }
 
     wiredProductsResult;
 

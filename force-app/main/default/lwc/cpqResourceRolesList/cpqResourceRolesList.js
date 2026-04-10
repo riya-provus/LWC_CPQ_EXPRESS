@@ -6,6 +6,7 @@ import deleteResourceRole from '@salesforce/apex/ResourceRoleController.deleteRe
 import toggleResourceRoleActive from '@salesforce/apex/ResourceRoleController.toggleResourceRoleActive';
 import createResourceRole from '@salesforce/apex/ResourceRoleController.createResourceRole';
 import updateResourceRole from '@salesforce/apex/ResourceRoleController.updateResourceRole';
+import getCurrentUserRole from '@salesforce/apex/CPQAdminController.getCurrentUserRole';
 
 const LS_KEY = 'cpqResourceRolesListViewSettings';
 
@@ -46,6 +47,19 @@ export default class CpqResourceRolesList extends LightningElement {
         { id: 'cost', label: 'Cost', visible: true, locked: false },
         { id: 'active', label: 'Active', visible: true, locked: false }
     ];
+
+    @track currentUserRole = 'User';
+
+    @wire(getCurrentUserRole)
+    wiredUserRole({ error, data }) {
+        if (data) {
+            this.currentUserRole = data;
+        }
+    }
+
+    get canCreate() {
+        return this.currentUserRole !== 'User';
+    }
 
     _wiredRolesResult;
 
