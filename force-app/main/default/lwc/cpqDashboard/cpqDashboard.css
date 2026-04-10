@@ -273,7 +273,7 @@ ul { margin: 0; padding: 0; list-style: none; }
     font-weight: 700;
     border-bottom-left-radius: 12px;
     border-bottom-right-radius: 12px;
-    cursor: pointer;
+    /* cursor: pointer; */
 }
 /* Insight Colors Match Screenshot exactly */
 .box-yellow { background: linear-gradient(to bottom, #fefce8, #fef08a); color: #854d0e; }
