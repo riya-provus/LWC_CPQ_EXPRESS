@@ -6,6 +6,7 @@ import createAddon from '@salesforce/apex/AddonListController.createAddon';
 import updateAddon from '@salesforce/apex/AddonListController.updateAddon';
 import deleteAddon from '@salesforce/apex/AddonListController.deleteAddon';
 import toggleAddonActive from '@salesforce/apex/AddonListController.toggleAddonActive';
+import getCurrentUserRole from '@salesforce/apex/CPQAdminController.getCurrentUserRole';
 
 const LS_KEY = 'cpqAddonsListViewSettings';
 
@@ -43,6 +44,19 @@ export default class CpqAddonsList extends LightningElement {
         { id: 'tags', label: 'Tags', visible: true },
         { id: 'active', label: 'Active', visible: true }
     ];
+
+    @track currentUserRole = 'User';
+
+    @wire(getCurrentUserRole)
+    wiredUserRole({ error, data }) {
+        if (data) {
+            this.currentUserRole = data;
+        }
+    }
+
+    get canCreate() {
+        return this.currentUserRole !== 'User';
+    }
 
     wiredAddonsResult;
 

@@ -5,6 +5,7 @@ import getTeamData    from '@salesforce/apex/CPQAdminController.getTeamData';
 import createTeamMember from '@salesforce/apex/CPQAdminController.createTeamMember';
 import updateUserRole from '@salesforce/apex/CPQAdminController.updateUserRole';
 import toggleUserStatus from '@salesforce/apex/CPQAdminController.toggleUserStatus';
+import getCurrentUserRole from '@salesforce/apex/CPQAdminController.getCurrentUserRole';
 import { refreshApex } from '@salesforce/apex';
 
 const AVATAR_COLORS = [
@@ -61,6 +62,20 @@ export default class CpqAdminSettings extends LightningElement {
     @track saveError   = null;
 
     _wiredSettingsResult;
+    @track currentUserRole = 'User';
+
+    @wire(getCurrentUserRole)
+    wiredUserRole({ error, data }) {
+        if (data) {
+            this.currentUserRole = data;
+        } else if (error) {
+            console.error('Error fetching user role:', error);
+        }
+    }
+
+    get showAddMemberButton() {
+        return this.currentUserRole === 'Admin';
+    }
 
     @wire(getSettings)
     wiredSettings(result) {

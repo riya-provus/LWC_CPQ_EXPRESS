@@ -7,10 +7,12 @@
                 <p class="text-sm text-gray-secondary">Manage your Products</p>
             </div>
             <div class="header-actions">
-                <button class="btn btn-primary" onclick={handleNewProduct}>
-                    <lightning-icon icon-name="utility:add" size="xx-small" variant="inverse" class="margin-right-xs"></lightning-icon>
-                    New
-                </button>
+                <template if:true={canCreate}>
+                    <button class="btn btn-primary" onclick={handleNewProduct}>
+                        <lightning-icon icon-name="utility:add" size="xx-small" variant="inverse" class="margin-right-xs"></lightning-icon>
+                        New
+                    </button>
+                </template>
                 <button class="btn btn-outline" onclick={handleImport}>
                     <lightning-icon icon-name="utility:upload" size="xx-small" class="margin-right-xs"></lightning-icon>
                     Import

@@ -213,8 +213,11 @@ public with sharing class CPQAdminController {
 
     @AuraEnabled(cacheable=true)
     public static String getCurrentUserRole() {
-        User curr = [SELECT CPQ_Role__c FROM User WHERE Id = :UserInfo.getUserId() LIMIT 1];
-        return curr.CPQ_Role__c != null ? curr.CPQ_Role__c : 'User';
+        User curr = [SELECT Profile.Name, CPQ_Role__c FROM User WHERE Id = :UserInfo.getUserId() LIMIT 1];
+        if (curr.Profile.Name == 'System Administrator') return 'Admin';
+        if (curr.CPQ_Role__c == 'Admin') return 'Admin';
+        if (curr.CPQ_Role__c == 'Manager' || curr.Profile.Name == 'CPQ_Manager') return 'Manager';
+        return 'User';
     }
 
     private static String getInitials(String first, String last) {

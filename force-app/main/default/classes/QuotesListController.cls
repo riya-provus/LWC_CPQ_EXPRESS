@@ -14,10 +14,13 @@ public with sharing class QuotesListController {
                            'Description, ExpirationDate ' +
                            'FROM Quote ';
             
-            // Managers strictly see only 'In Review' quotes awaiting their action
+            // We used to strictly filter for Managers here, but now we allow them to see all quotes
+            // and handle the default 'In Review' filter on the client-side LWC.
+            /*
             if (role == 'Manager') {
                 query += 'WHERE Status = \'In Review\' ';
             }
+            */
 
             query += 'ORDER BY CreatedDate DESC LIMIT 200';
             return Database.query(query);
