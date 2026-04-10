@@ -122,7 +122,7 @@
                                     </div>
                                     <div class="card-field">
                                         <span class="field-label">Currency</span>
-                                        <span class="field-value">USD</span>
+                                        <span class="field-value">INR</span>
                                     </div>
                                 </div>
                             </div>
@@ -189,7 +189,7 @@
                                             <div key={phase.label} class="bar-group">
                                                 <div class="bar-label-row">
                                                     <span class="bar-label">{phase.label}</span>
-                                                    <span class="bar-percent">${phase.value}</span>
+                                                    <span class="bar-percent">₹{phase.value}</span>
                                                 </div>
                                                 <div class="bar-track">
                                                     <div class="bar-fill" style="width: 60%; background-color: #3b82f6;"></div> <!-- Dynamic logic simplified for now -->
@@ -298,7 +298,9 @@
                                             <td class="cell-discount">
                                                 <lightning-input type="number" value={item.discount} data-id={item.id} data-field="discount" onchange={handleInputChange} variant="label-hidden" disabled={isReadOnly}></lightning-input>
                                             </td>
-                                            <td class="cell-total">{item.totalValue}</td>
+                                            <td class="cell-total">
+                                                <lightning-formatted-number value={item.totalValue} format-style="currency" currency-code="INR"></lightning-formatted-number>
+                                            </td>
                                             <td class="cell-actions">
                                                 <button if:false={isReadOnly} class="delete-item-btn" data-id={item.id} data-is-new={item.isNew} onclick={handleDeleteItem} title="Remove item">
                                                     <lightning-icon icon-name="utility:delete" size="xx-small" alternative-text="Delete"></lightning-icon>
@@ -441,42 +443,63 @@
                             <div class="slider-value-display">{whatIfDiscount}% Discount</div>
                         </div>
 
-                        <div class="analyzer-action-box">
-                            <template if:true={analyzerNeedApproval}>
-                                <div class="approval-warning">
-                                    <lightning-icon icon-name="utility:warning" size="small" variant="error"></lightning-icon>
-                                    <span><strong>Manager Approval Required.</strong> The configured margin dropped below the 20% safe zone constraint.</span>
-                                </div>
-                            </template>
-                            <template if:false={analyzerNeedApproval}>
-                                <div class="approval-safe">
-                                    <lightning-icon icon-name="utility:success" size="small" variant="success"></lightning-icon>
-                                    <span><strong>Looks Good!</strong> Margin is safely above the 20% safe zone constraint.</span>
-                                </div>
-                            </template>
+                        <!-- Target Margin Finder (Feature 1) -->
+                        <div class="analyzer-controls-card slds-m-top_medium" style="background: #f8fafc; border: 1px dashed #cbd5e1; padding: 1.25rem; border-radius: 12px;">
+                            <h3 class="analyzer-card-title" style="color: #64748b; margin-bottom: 0.75rem;">Target Margin Finder</h3>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <lightning-input type="number" label="Desired Margin %" value={targetMargin} onchange={handleTargetMarginChange} variant="label-hidden" style="flex: 1;"></lightning-input>
+                                <button class="secondary-btn" style="white-space: nowrap; padding: 8px 16px;" onclick={findIdealDiscount}>Find Discount</button>
+                            </div>
+                        </div>
 
-                            <button class="primary-btn apply-btn" onclick={applyAnalyzerDiscount}>Apply {whatIfDiscount}% Discount to All Line Items &rarr;</button>
+                        <div class="analyzer-action-box slds-m-top_medium">
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="primary-btn apply-btn" style="flex: 2;" onclick={applyAnalyzerDiscount}>Apply {whatIfDiscount}% Discount &rarr;</button>
+                                <button class="secondary-btn" style="flex: 1;" onclick={saveScenario}>Save Scenario</button>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Right: Live Gauges -->
+                    <!-- Right: Live Gauges & Scenarios -->
                     <div class="analyzer-gauges-wrapper">
+                        <!-- Scenario Comparison (Feature 4) -->
+                        <div class="comparison-card" if:true={comparisonScenarios.length} style="background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3 class="analyzer-card-title" style="margin: 0;">Scenarios</h3>
+                                <button class="text-btn-small" onclick={clearScenarios} style="color: #ef4444; border: none; background: transparent; cursor: pointer; font-size: 11px; font-weight: 700;">RESET</button>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <template for:each={comparisonScenarios} for:item="sc">
+                                    <div key={sc.id} style="display: flex; justify-content: space-between; background: #f8fafc; padding: 8px 12px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                                        <div style="font-weight: 700;">{sc.discount}% <span style="font-weight: 400; opacity: 0.6;">Off</span></div>
+                                        <div style="color: #059669; font-weight: 700;">{sc.margin}% <span style="font-weight: 400; opacity: 0.6; color: #64748b;">Margin</span></div>
+                                        <div style="font-weight: 700;">{sc.profit}</div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Break-Even Indicator (Feature 3) -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.25rem; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px; margin-bottom: 0.5rem;">
+                            <span style="font-size: 0.75rem; color: #92400e; font-weight: 600;">Break-even Quote Amount:</span>
+                            <strong style="color: #92400e;"><lightning-formatted-number value={breakEvenPrice} format-style="currency" currency-code="INR"></lightning-formatted-number></strong>
+                        </div>
                         <!-- Revenue Metric -->
                         <div class="metric-box bg-blue">
                             <div class="metric-title">Simulated Total Revenue</div>
                             <div class="metric-val">
-                                <lightning-formatted-number value={whatIfTotal} format-style="currency" currency-code="USD" maximum-fraction-digits="2"></lightning-formatted-number>
+                                <lightning-formatted-number value={whatIfTotal} format-style="currency" currency-code="INR" maximum-fraction-digits="2"></lightning-formatted-number>
                             </div>
                             <div class="metric-sub">
-                                Subtotal was: <lightning-formatted-number value={whatIfSubtotal} format-style="currency" currency-code="USD" maximum-fraction-digits="2"></lightning-formatted-number>
+                                Subtotal was: <lightning-formatted-number value={whatIfSubtotal} format-style="currency" currency-code="INR" maximum-fraction-digits="2"></lightning-formatted-number>
                             </div>
                         </div>
-
+ 
                         <!-- Net Profit Metric -->
                         <div class="metric-box bg-teal">
                             <div class="metric-title">Simulated Net Profit</div>
                             <div class="metric-val">
-                                <lightning-formatted-number value={analyzerGrossMarginAmount} format-style="currency" currency-code="USD" maximum-fraction-digits="2"></lightning-formatted-number>
+                                <lightning-formatted-number value={analyzerGrossMarginAmount} format-style="currency" currency-code="INR" maximum-fraction-digits="2"></lightning-formatted-number>
                             </div>
                         </div>
 

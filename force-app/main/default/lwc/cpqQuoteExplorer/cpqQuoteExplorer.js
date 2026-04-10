@@ -35,6 +35,8 @@ export default class CpqQuoteExplorer extends LightningElement {
     @track catalogTab = 'Products';
     @track catalogSearchStr = '';
     @track isDraggingOver = false;
+    @track targetMargin = 20;
+    @track comparisonScenarios = [];
 
     // Chart Data (Mocking Phase data for now as researched)
     @track phaseBreakdown = [
@@ -567,10 +569,10 @@ export default class CpqQuoteExplorer extends LightningElement {
         const total = this.calculatedTotal;
         const discountAmt = total - subtotal;
         
-        if (subtotal === 0 || discountAmt === 0) return '$0.00 (0.0%)';
+        if (subtotal === 0 || discountAmt === 0) return '₹0.00 (0.0%)';
         
         const discountPct = (discountAmt / subtotal) * 100;
-        return `${discountAmt < 0 ? '-' : ''}$${Math.abs(discountAmt).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${discountPct.toFixed(1)}%)`;
+        return `${discountAmt < 0 ? '-' : ''}₹${Math.abs(discountAmt).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${discountPct.toFixed(1)}%)`;
     }
 
     get calculatedMargin() {
@@ -580,10 +582,10 @@ export default class CpqQuoteExplorer extends LightningElement {
         }, 0);
         
         const marginAmt = totalRev - totalCost;
-        if (totalRev === 0) return `$0.00 (0.00%)`;
+        if (totalRev === 0) return `₹0.00 (0.00%)`;
         
         const marginPct = (marginAmt / totalRev) * 100;
-        return `$${marginAmt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${marginPct.toFixed(1)}%)`;
+        return `₹${marginAmt.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${marginPct.toFixed(1)}%)`;
     }
     
     get formattedSubtotal() { return this.formatCurrency(this.calculatedSubtotal); }
@@ -616,12 +618,15 @@ export default class CpqQuoteExplorer extends LightningElement {
     }
 
     formatCurrency(val) {
-        if (!val) return '$0.00';
-        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+        if (!val) return '₹0.00';
+        return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(val);
     }
 
     get tabs() {
-        const tabList = ['Summary', 'Line Items', 'Timeline', 'Generated PDFs', 'Margin Analyzer'];
+        const tabList = ['Summary', 'Line Items', 'Timeline', 'Generated PDFs'];
+        if (this.isManager) {
+            tabList.push('Margin Analyzer');
+        }
         return tabList.map(tab => ({
             name: tab,
             class: tab === this.activeTab ? 'tab-item active' : 'tab-item'
@@ -632,7 +637,7 @@ export default class CpqQuoteExplorer extends LightningElement {
     get isLineItemsActive() { return this.activeTab === 'Line Items'; }
     get isTimelineActive() { return this.activeTab === 'Timeline'; }
     get isGeneratedPDFsActive() { return this.activeTab === 'Generated PDFs'; }
-    get isMarginAnalyzerActive() { return this.activeTab === 'Margin Analyzer'; }
+    get isMarginAnalyzerActive() { return this.activeTab === 'Margin Analyzer' && this.isManager; }
 
     // Drag and Drop Catalog Logic
     get catalogTabClassProducts() { return this.catalogTab === 'Products' ? 'active' : ''; }
@@ -747,6 +752,36 @@ export default class CpqQuoteExplorer extends LightningElement {
 
     handleWhatIfDiscountChange(event) {
         this.whatIfDiscount = parseFloat(event.target.value) || 0;
+    }
+
+    handleTargetMarginChange(event) {
+        this.targetMargin = parseFloat(event.target.value) || 0;
+    }
+
+    findIdealDiscount() {
+        const totalCost = this.draftItems.reduce((acc, item) => acc + ((item.quantity || 0) * (item.baseRate || 0)), 0);
+        const revenueAtTarget = totalCost / (1 - (this.targetMargin / 100));
+        const currentSubtotal = this.calculatedSubtotal;
+        if (currentSubtotal === 0) return;
+        const idealDiscount = ((currentSubtotal - revenueAtTarget) / currentSubtotal) * 100;
+        this.whatIfDiscount = Math.max(0, Math.floor(idealDiscount * 10) / 10);
+        this.dispatchEvent(new ShowToastEvent({ title: 'Target Calculated', message: `Applied ${this.whatIfDiscount}% discount to hit target.`, variant: 'info' }));
+    }
+
+    saveScenario() {
+        if (this.comparisonScenarios.length >= 3) return;
+        this.comparisonScenarios = [...this.comparisonScenarios, {
+            id: Date.now(),
+            discount: this.whatIfDiscount,
+            margin: this.analyzerGrossMarginPercent.toFixed(1),
+            profit: this.formatCurrency(this.analyzerGrossMarginAmount)
+        }];
+    }
+
+    clearScenarios() { this.comparisonScenarios = []; }
+
+    get breakEvenPrice() {
+        return this.draftItems.reduce((acc, item) => acc + ((item.quantity || 0) * (item.baseRate || 0)), 0);
     }
 
     applyAnalyzerDiscount() {

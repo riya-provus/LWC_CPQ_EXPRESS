@@ -108,8 +108,8 @@ export default class CpqResourceRolesList extends LightningElement {
                 ...role,
                 indexNumber: index + 1,
                 recordUrl: `/lightning/r/Resource_Role__c/${role.Id}/view`,
-                formattedPrice: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price),
-                formattedCost: cost ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cost) : '—',
+                formattedPrice: new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(price),
+                formattedCost: cost ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(cost) : '—',
                 displayLocation: locationParts.length > 0 ? locationParts.join(', ') : '—'
             };
         });
