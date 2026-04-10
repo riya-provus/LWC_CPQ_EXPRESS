@@ -320,8 +320,8 @@ export default class CpqQuotesList extends LightningElement {
                 ...q,
                 indexNumber: idx + 1,
                 recordUrl: '/' + q.Id,
-                formattedCreatedDate: q.CreatedDate ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(q.CreatedDate)) : '',
-                formattedAmount: q.Total_Amount__c != null ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(q.Total_Amount__c) : '$0.00',
+                formattedCreatedDate: q.CreatedDate ? new Intl.DateTimeFormat('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(q.CreatedDate)) : '',
+                formattedAmount: q.Total_Amount__c != null ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(q.Total_Amount__c) : '₹0.00',
                 formattedDiscount: q.Discount__c != null ? `${q.Discount__c}%` : '0%',
                 formattedMargin: q.Margin_Percentage__c != null ? `${q.Margin_Percentage__c}%` : '0%',
                 statusClass: statusClass
