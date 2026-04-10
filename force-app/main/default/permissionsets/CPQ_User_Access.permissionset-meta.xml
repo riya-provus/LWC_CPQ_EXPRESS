@@ -119,4 +119,8 @@
         <apexClass>ResourceRoleController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <pageAccesses>
+        <apexPage>QuoteDocument</apexPage>
+        <enabled>true</enabled>
+    </pageAccesses>
 </PermissionSet>

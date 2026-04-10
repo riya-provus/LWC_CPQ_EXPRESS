@@ -102,10 +102,9 @@
             <!-- Summary View -->
             <template if:false={isLoading}>
                 <template if:true={isSummaryActive}>
-                    <div class="content-grid">
-                        <!-- Left Section (Main Details) -->
-                        <div class="main-details-panel">
-                            <!-- Context Card -->
+                    <div class="summary-dashboard-layout">
+                        <!-- Left Pillar: Core Data & Revenue -->
+                        <div class="summary-left-pillar">
                             <div class="detail-card context-card">
                                 <div class="card-grid">
                                     <div class="card-field">
@@ -127,8 +126,7 @@
                                 </div>
                             </div>
 
-                            <!-- Revenue Summary Row -->
-                            <div class="revenue-grid">
+                            <div class="revenue-grid-stacked">
                                 <div class="rev-card labor">
                                     <div class="rev-header">
                                         <lightning-icon icon-name="utility:user" size="small" class="rev-icon blue"></lightning-icon>
@@ -160,46 +158,45 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Breakdown Charts Area -->
-                            <div class="charts-section">
-                                <!-- Item Type Breakdown -->
-                                <div class="chart-card">
-                                    <h3 class="chart-title">Item Type Breakdown</h3>
-                                    <div class="custom-bar-chart">
-                                        <template for:each={calculatedBreakdown} for:item="item">
-                                            <div key={item.label} class="bar-group">
-                                                <div class="bar-label-row">
-                                                    <span class="bar-label">{item.label}</span>
-                                                    <span class="bar-percent">{item.percentage}%</span>
-                                                </div>
-                                                <div class="bar-track">
-                                                    <div class="bar-fill" style={item.style}></div>
-                                                </div>
+                        <!-- Right Pillar: Visual Analytics -->
+                        <div class="summary-right-pillar">
+                            <div class="chart-container-card">
+                                <h3 class="side-chart-title">Item Type Distribution</h3>
+                                <div class="premium-bar-chart">
+                                    <template for:each={calculatedBreakdown} for:item="item">
+                                        <div key={item.label} class="p-bar-group">
+                                            <div class="p-bar-labels">
+                                                <span class="p-bar-name">{item.label}</span>
+                                                <span class="p-bar-val">{item.percentage}%</span>
                                             </div>
-                                        </template>
-                                    </div>
+                                            <div class="p-bar-track">
+                                                <div class="p-bar-fill" style={item.style}></div>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
+                            </div>
 
-                                <!-- Phase Breakdown -->
-                                <div class="chart-card">
-                                    <h3 class="chart-title">Project Phase Breakdown</h3>
-                                    <div class="custom-bar-chart">
-                                        <template for:each={phaseBreakdown} for:item="phase">
-                                            <div key={phase.label} class="bar-group">
-                                                <div class="bar-label-row">
-                                                    <span class="bar-label">{phase.label}</span>
-                                                    <span class="bar-percent">₹{phase.value}</span>
-                                                </div>
-                                                <div class="bar-track">
-                                                    <div class="bar-fill" style="width: 60%; background-color: #3b82f6;"></div> <!-- Dynamic logic simplified for now -->
-                                                </div>
+                            <div class="chart-container-card">
+                                <h3 class="side-chart-title">Project Phase Allocation</h3>
+                                <div class="premium-bar-chart">
+                                    <template for:each={phaseBreakdown} for:item="phase">
+                                        <div key={phase.label} class="p-bar-group">
+                                            <div class="p-bar-labels">
+                                                <span class="p-bar-name">{phase.label}</span>
+                                                <span class="p-bar-val">₹{phase.value}</span>
                                             </div>
-                                        </template>
-                                    </div>
+                                            <div class="p-bar-track">
+                                                <div class="p-bar-fill" style="width: 70%; background: linear-gradient(90deg, #3b82f6, #60a5fa);"></div>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
                         </div>
                     </div>
@@ -432,85 +429,96 @@
                         <h2 style="font-size: 1.5rem; font-weight: 700; color: #111827;">"What-If" Margin & Discount Analyzer</h2>
                         <p style="color: #6b7280; margin-top: 0.25rem;">Move the slider to simulate global discounts across your entire quote and see the live impact on your revenue margins before saving.</p>
                     </div>
-                </div>
+                </div>                <div class="analyzer-optimized-layout">
+                    <!-- Dashboard Section: Controls & Live Results -->
+                    <div class="analyzer-dashboard-row">
+                        <!-- Left: Simulation Controls -->
+                        <div class="analyzer-glass-card controls-zone">
+                            <div class="card-header-mini">ADJUST TRANSACTION VALUE</div>
+                            <div class="slider-main-box">
+                                <div class="slider-pct-display">{whatIfDiscount}% <small>OFF</small></div>
+                                <input type="range" min="0" max="100" value={whatIfDiscount} class="modern-slider" oninput={handleWhatIfDiscountChange} step="1">
+                            </div>
 
-                <div class="analyzer-grid">
-                    <!-- Left: Interactive Controls -->
-                    <div class="analyzer-controls-card">
-                        <h3 class="analyzer-card-title">Adjust Global Discount</h3>
-                        <div class="slider-container">
-                            <input type="range" min="0" max="100" value={whatIfDiscount} class="discount-slider" oninput={handleWhatIfDiscountChange} step="1">
-                            <div class="slider-value-display">{whatIfDiscount}% Discount</div>
-                        </div>
-
-                        <!-- Target Margin Finder (Feature 1) -->
-                        <div class="analyzer-controls-card slds-m-top_medium" style="background: #f8fafc; border: 1px dashed #cbd5e1; padding: 1.25rem; border-radius: 12px;">
-                            <h3 class="analyzer-card-title" style="color: #64748b; margin-bottom: 0.75rem;">Target Margin Finder</h3>
-                            <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                <lightning-input type="number" label="Desired Margin %" value={targetMargin} onchange={handleTargetMarginChange} variant="label-hidden" style="flex: 1;"></lightning-input>
-                                <button class="secondary-btn" style="white-space: nowrap; padding: 8px 16px;" onclick={findIdealDiscount}>Find Discount</button>
+                            <div class="target-finder-compact">
+                                <div class="finder-lbl">Target Margin Finder</div>
+                                <div class="finder-row">
+                                    <lightning-input type="number" label="T" value={targetMargin} onchange={handleTargetMarginChange} variant="label-hidden" style="width: 80px;"></lightning-input>
+                                    <button class="btn-calculate" onclick={findIdealDiscount}>Find %</button>
+                                    <div class="break-even-pill">
+                                        BE: <strong>₹{breakEvenPrice}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="action-footer">
+                                <button class="btn-apply-primary" onclick={applyAnalyzerDiscount}>Apply Discount to All &rarr;</button>
+                                <button class="btn-save-scenario" onclick={saveScenario}>Save Scenario</button>
                             </div>
                         </div>
 
-                        <div class="analyzer-action-box slds-m-top_medium">
-                            <div style="display: flex; gap: 0.5rem;">
-                                <button class="primary-btn apply-btn" style="flex: 2;" onclick={applyAnalyzerDiscount}>Apply {whatIfDiscount}% Discount &rarr;</button>
-                                <button class="secondary-btn" style="flex: 1;" onclick={saveScenario}>Save Scenario</button>
+                        <!-- Right: Live Intelligence -->
+                        <div class="analyzer-glass-card metrics-zone">
+                            <div class="card-header-mini">LIVE PROFITABILITY ANALYSIS</div>
+                            <div class="metrics-staggered-grid">
+                                <div class="mini-metric blue">
+                                    <div class="m-lbl">EST. REVENUE</div>
+                                    <div class="m-val"><lightning-formatted-number value={whatIfTotal} format-style="currency" currency-code="INR"></lightning-formatted-number></div>
+                                </div>
+                                <div class="mini-metric green">
+                                    <div class="m-lbl">NET PROFIT</div>
+                                    <div class="m-val"><lightning-formatted-number value={analyzerGrossMarginAmount} format-style="currency" currency-code="INR"></lightning-formatted-number></div>
+                                </div>
+                                <div class={marginStatusClass}>
+                                    <div class="mini-metric">
+                                        <div class="m-lbl">MARGIN %</div>
+                                        <div class="m-val">{formattedAnalyzerMargin}%</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="margin-health-bar">
+                                <div class="health-fill" style={healthBarStyle}></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Right: Live Gauges & Scenarios -->
-                    <div class="analyzer-gauges-wrapper">
-                        <!-- Scenario Comparison (Feature 4) -->
-                        <div class="comparison-card" if:true={comparisonScenarios.length} style="background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                                <h3 class="analyzer-card-title" style="margin: 0;">Scenarios</h3>
-                                <button class="text-btn-small" onclick={clearScenarios} style="color: #ef4444; border: none; background: transparent; cursor: pointer; font-size: 11px; font-weight: 700;">RESET</button>
+                    <!-- Comparison Section: Horizontal Shelf -->
+                    <template if:true={comparisonScenarios.length}>
+                        <div class="scenario-shelf-wrapper">
+                            <div class="shelf-header">
+                                <span class="shelf-title">DEAL COMPARISONS</span>
+                                <button class="btn-reset-shelf" onclick={clearScenarios}>RESET</button>
                             </div>
-                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                <template for:each={comparisonScenarios} for:item="sc">
-                                    <div key={sc.id} style="display: flex; justify-content: space-between; background: #f8fafc; padding: 8px 12px; border-radius: 8px; border-left: 4px solid #3b82f6;">
-                                        <div style="font-weight: 700;">{sc.discount}% <span style="font-weight: 400; opacity: 0.6;">Off</span></div>
-                                        <div style="color: #059669; font-weight: 700;">{sc.margin}% <span style="font-weight: 400; opacity: 0.6; color: #64748b;">Margin</span></div>
-                                        <div style="font-weight: 700;">{sc.profit}</div>
+                            <div class="shelf-scroll">
+                                <template for:each={scenarioSummary} for:item="sc">
+                                    <div key={sc.id} class="scenario-premium-card" style={sc.borderStyle}>
+                                        <div class="card-top-row">
+                                            <span class="deal-status" style={sc.statusColor}>{sc.statusLabel}</span>
+                                            <span class="deal-id">SCENARIO {sc.id}</span>
+                                        </div>
+                                        <div class="card-metrics-grid">
+                                            <div class="m-item">
+                                                <span class="m-title">DISCOUNT</span>
+                                                <span class="m-val-bold">{sc.discountPct}%</span>
+                                            </div>
+                                            <div class="m-item">
+                                                <span class="m-title">MARGIN</span>
+                                                <span class="m-val-bold highlight" style={sc.statusColor}>{sc.margin}%</span>
+                                            </div>
+                                            <div class="m-item full">
+                                                <span class="m-title">EST. REVENUE</span>
+                                                <span class="m-val-med">₹{sc.revenue}</span>
+                                            </div>
+                                            <div class="m-item full">
+                                                <span class="m-title">NET PROFIT</span>
+                                                <span class="m-val-med">₹{sc.profit}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </template>
                             </div>
                         </div>
-
-                        <!-- Break-Even Indicator (Feature 3) -->
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.25rem; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px; margin-bottom: 0.5rem;">
-                            <span style="font-size: 0.75rem; color: #92400e; font-weight: 600;">Break-even Quote Amount:</span>
-                            <strong style="color: #92400e;"><lightning-formatted-number value={breakEvenPrice} format-style="currency" currency-code="INR"></lightning-formatted-number></strong>
-                        </div>
-                        <!-- Revenue Metric -->
-                        <div class="metric-box bg-blue">
-                            <div class="metric-title">Simulated Total Revenue</div>
-                            <div class="metric-val">
-                                <lightning-formatted-number value={whatIfTotal} format-style="currency" currency-code="INR" maximum-fraction-digits="2"></lightning-formatted-number>
-                            </div>
-                            <div class="metric-sub">
-                                Subtotal was: <lightning-formatted-number value={whatIfSubtotal} format-style="currency" currency-code="INR" maximum-fraction-digits="2"></lightning-formatted-number>
-                            </div>
-                        </div>
- 
-                        <!-- Net Profit Metric -->
-                        <div class="metric-box bg-teal">
-                            <div class="metric-title">Simulated Net Profit</div>
-                            <div class="metric-val">
-                                <lightning-formatted-number value={analyzerGrossMarginAmount} format-style="currency" currency-code="INR" maximum-fraction-digits="2"></lightning-formatted-number>
-                            </div>
-                        </div>
-
-                        <!-- Margin Gauge -->
-                        <div class={analyzerNeedApprovalClass}>
-                            <div class="metric-title">Profit Margin</div>
-                            <div class="gauge-circle-val">
-                                <lightning-formatted-number value={analyzerGrossMarginPercent} maximum-fraction-digits="1"></lightning-formatted-number>%
-                            </div>
-                        </div>
-                    </div>
+                    </template>
                 </div>
 
                     </div>

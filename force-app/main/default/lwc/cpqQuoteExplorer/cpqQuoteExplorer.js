@@ -23,7 +23,7 @@ export default class CpqQuoteExplorer extends LightningElement {
     @track lineItems = [];
     @track draftItems = [];
     @track savedPDFs = [];
-    @track activeTab = 'Margin Analyzer'; // Changed default to show it off
+    @track activeTab = 'Summary'; // Standard landing page for all users
     @track isLoading = true;
     @track isModalOpen = false;
     @track isPreviewModalOpen = false;
@@ -742,6 +742,10 @@ export default class CpqQuoteExplorer extends LightningElement {
         return totalRev > 0 ? (this.analyzerGrossMarginAmount / totalRev) * 100 : 0;
     }
 
+    get formattedAnalyzerMargin() {
+        return this.analyzerGrossMarginPercent.toFixed(1);
+    }
+
     get analyzerNeedApproval() {
         return this.analyzerGrossMarginPercent < 20;
     }
@@ -769,16 +773,65 @@ export default class CpqQuoteExplorer extends LightningElement {
     }
 
     saveScenario() {
-        if (this.comparisonScenarios.length >= 3) return;
-        this.comparisonScenarios = [...this.comparisonScenarios, {
+        if (this.comparisonScenarios.length >= 3) {
+             this.dispatchEvent(new ShowToastEvent({ title: 'Limit Reached', message: 'Maximum 3 scenarios allowed.', variant: 'warning' }));
+             return;
+        }
+
+        // Capture snapshot of ALL current "What-If" calculations
+        const snapshot = {
             id: Date.now(),
-            discount: this.whatIfDiscount,
-            margin: this.analyzerGrossMarginPercent.toFixed(1),
-            profit: this.formatCurrency(this.analyzerGrossMarginAmount)
-        }];
+            discountPct: this.whatIfDiscount,
+            revenue: this.formatCurrency(this.whatIfTotal),
+            profit: this.formatCurrency(this.analyzerGrossMarginAmount),
+            margin: this.analyzerGrossMarginPercent.toFixed(1)
+        };
+
+        this.comparisonScenarios = [...this.comparisonScenarios, snapshot];
+        
+        this.dispatchEvent(new ShowToastEvent({
+            title: 'Scenario Captured',
+            message: `Snapshot at ${this.whatIfDiscount}% discount saved successfully.`,
+            variant: 'success'
+        }));
     }
 
     clearScenarios() { this.comparisonScenarios = []; }
+
+    get marginStatusClass() {
+        const pct = this.analyzerGrossMarginPercent;
+        if (pct >= 25) return 'status-safe';
+        if (pct >= 15) return 'status-warn';
+        return 'status-danger';
+    }
+
+    get scenarioSummary() {
+        return this.comparisonScenarios.map(s => {
+            const pct = parseFloat(s.margin);
+            let color = '#059669'; 
+            let bg = '#effdfa';
+            let status = 'HEALTHY';
+            
+            if (pct < 25) { 
+                color = '#ca8a04'; 
+                bg = '#fefce8'; 
+                status = 'WARNING'; 
+            }
+            if (pct < 15) { 
+                color = '#dc2626'; 
+                bg = '#fef2f2'; 
+                status = 'RISKY'; 
+            }
+
+            return { 
+                ...s, 
+                borderStyle: `border-left: 4px solid ${color};`,
+                cardStyle: `background: ${bg};`,
+                statusColor: `color: ${color};`,
+                statusLabel: status
+            };
+        });
+    }
 
     get breakEvenPrice() {
         return this.draftItems.reduce((acc, item) => acc + ((item.quantity || 0) * (item.baseRate || 0)), 0);
